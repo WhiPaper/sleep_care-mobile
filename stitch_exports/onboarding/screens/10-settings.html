@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings - SleepGuide</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "outline-variant": "#454652",
+              "surface-container": "#1e2021",
+              "surface-container-low": "#1a1c1d",
+              "on-secondary-fixed-variant": "#293ca0",
+              "surface-container-lowest": "#0c0e10",
+              "surface-container-highest": "#333537",
+              "on-tertiary-fixed-variant": "#004e59",
+              "secondary-fixed": "#dee0ff",
+              "outline": "#908f9d",
+              "tertiary-fixed-dim": "#44d8f1",
+              "on-tertiary-container": "#00a6bc",
+              "primary-fixed-dim": "#bdc2ff",
+              "primary-fixed": "#e0e0ff",
+              "on-surface": "#e2e2e4",
+              "error-container": "#93000a",
+              "surface-dim": "#111415",
+              "error": "#ffb4ab",
+              "inverse-surface": "#e2e2e4",
+              "surface-variant": "#333537",
+              "secondary": "#bac3ff",
+              "inverse-primary": "#4c56af",
+              "on-secondary": "#08218a",
+              "inverse-on-surface": "#2f3132",
+              "on-secondary-fixed": "#00105c",
+              "on-primary-fixed-variant": "#343d96",
+              "tertiary-fixed": "#a1efff",
+              "on-secondary-container": "#a8b4ff",
+              "background": "#111415",
+              "on-tertiary-fixed": "#001f25",
+              "surface-tint": "#bdc2ff",
+              "on-primary-container": "#8690ee",
+              "on-primary-fixed": "#000767",
+              "surface": "#111415",
+              "secondary-container": "#2c3ea3",
+              "on-surface-variant": "#c6c5d4",
+              "secondary-fixed-dim": "#bac3ff",
+              "on-error-container": "#ffdad6",
+              "primary": "#bdc2ff",
+              "primary-container": "#1a237e",
+              "on-primary": "#1b247f",
+              "tertiary": "#44d8f1",
+              "on-error": "#690005",
+              "on-background": "#e2e2e4",
+              "tertiary-container": "#00353d",
+              "surface-container-high": "#282a2c",
+              "surface-bright": "#37393b",
+              "on-tertiary": "#00363e"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30 min-h-screen">
+<header class="fixed top-0 w-full z-50 bg-[#111415]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bdc2ff]">menu</span>
+<h1 class="font-['Manrope'] text-lg font-semibold tracking-tight text-[#e2e2e4]">Settings</h1>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="close-up portrait of a student user profile avatar in a minimalist digital art style with soft glowing blue tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKOyD7Zv6JjTjttfUzNKC82S_k2FhaIRxjQ5bN-h_QkmQtGH3OhqibEKI4Pc1u4hybQRQvw_vdZ61wRWPIlyHwoQZX3-wS6k8-BLB2IW8JWCKd30wMNhMjjSJ4_k9gOMkocsUBXNmrlHbp6dZOhVHd9CDVrudNDCFI6Fb50AkFYbs058A0SFyfyVIDFpb6LubcVCxD6j5JUn7iGxYNKkRoiTLz-YbllMX9kF7jWyfuYSUqfzl78_GOIFl81CUS90n4ALtIMCjRj66e"/>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto space-y-8">
+<section class="space-y-4">
+<div class="flex items-center gap-6 p-6 rounded-xl bg-surface-container-low">
+<div class="w-20 h-20 rounded-full border-2 border-primary/20 p-1">
+<img alt="User Profile" class="w-full h-full rounded-full object-cover" data-alt="professional photographic portrait of a young student with a friendly expression in a modern study environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6q9wxHqz944zw4CAf15MMgFxMNTPh92KOCp_urT8A0d3eilPxm4w1KX34GyTBarPY4B1khWlTOc5QvizDyKVp4TKENEeiUK_93OeSjkF0tmnNWW_GUcVdV9I66a8lZMd6FApBII3d61iFS-4_Aubx9U1ZhwBHT7KcNH0HS5pSwv2xCdsNQacZHuTPwKf8pQ0qP29aOqEOyV66aG5__-vvWuWISwEstRC_VPkBlUg-e-9eiLNkatt1gBvhMnJdGZ5GnbViJE7NfLQK"/>
+</div>
+<div class="flex flex-col">
+<h2 class="font-headline text-xl font-bold text-on-surface">Alex Rivers</h2>
+<p class="text-on-surface-variant text-sm">Sophomore • Medical Sciences</p>
+<div class="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-primary-container/30 text-primary text-xs font-medium">
+                        Target: USMLE Step 1
+                    </div>
+</div>
+</div>
+</section>
+<section class="space-y-3">
+<h3 class="font-headline text-sm font-bold text-on-surface-variant uppercase tracking-widest pl-2">Notification Settings</h3>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden">
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">vibration</span>
+</div>
+<div>
+<p class="font-medium text-on-surface">Drowsiness alerts</p>
+<p class="text-xs text-on-surface-variant">Smartwatch vibration when fatigued</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-primary rounded-full relative">
+<div class="absolute right-1 top-1 w-4 h-4 bg-on-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">bedtime</span>
+</div>
+<div>
+<p class="font-medium text-on-surface">Sleep reminders</p>
+<p class="text-xs text-on-surface-variant">Notification to wind down</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-primary rounded-full relative">
+<div class="absolute right-1 top-1 w-4 h-4 bg-on-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">emoji_events</span>
+</div>
+<div>
+<p class="font-medium text-on-surface">Goal achieved</p>
+<p class="text-xs text-on-surface-variant">Celebration for sleep consistency</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full relative">
+<div class="absolute left-1 top-1 w-4 h-4 bg-outline rounded-full"></div>
+</div>
+</div>
+</div>
+</section>
+<section class="space-y-3">
+<h3 class="font-headline text-sm font-bold text-on-surface-variant uppercase tracking-widest pl-2">Device Management</h3>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden">
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">watch</span>
+</div>
+<div>
+<p class="font-medium text-on-surface">Manage synced hardware</p>
+<p class="text-xs text-on-surface-variant">1 Device connected (Oura Ring)</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</section>
+<section class="space-y-3">
+<h3 class="font-headline text-sm font-bold text-on-surface-variant uppercase tracking-widest pl-2">Privacy &amp; Data</h3>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden">
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined">download</span>
+</div>
+<div>
+<p class="font-medium text-on-surface">Export my data</p>
+<p class="text-xs text-on-surface-variant">Download sleep history (JSON/CSV)</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-error-container/20 flex items-center justify-center text-error">
+<span class="material-symbols-outlined">delete_forever</span>
+</div>
+<div>
+<p class="font-medium text-error">Delete account</p>
+<p class="text-xs text-on-surface-variant">Permanently remove all records</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</section>
+<section class="space-y-3 pb-8">
+<h3 class="font-headline text-sm font-bold text-on-surface-variant uppercase tracking-widest pl-2">Help &amp; Support</h3>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden">
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">quiz</span>
+</div>
+<p class="font-medium text-on-surface">FAQ</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">mail</span>
+</div>
+<p class="font-medium text-on-surface">Contact us</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</section>
+<div class="text-center pb-8">
+<p class="text-on-surface-variant text-[10px] uppercase tracking-tighter">SleepGuide v2.4.1 — Science of Rest</p>
+</div>
+</main>
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 pb-safe bg-[#111415]/90 backdrop-blur-2xl shadow-xl flex justify-around items-center h-20 w-full px-4">
+<div class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 duration-300">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 duration-300">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Analysis</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 duration-300">
+<span class="material-symbols-outlined">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Schedule</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#1a237e]/40 text-[#bdc2ff] rounded-2xl px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 duration-300">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Settings</span>
+</div>
+</nav>
+</body></html>

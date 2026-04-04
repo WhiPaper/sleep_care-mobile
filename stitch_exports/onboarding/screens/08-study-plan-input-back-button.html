@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "outline-variant": "#454652",
+              "surface-container": "#1e2021",
+              "surface-container-low": "#1a1c1d",
+              "on-secondary-fixed-variant": "#293ca0",
+              "surface-container-lowest": "#0c0e10",
+              "surface-container-highest": "#333537",
+              "on-tertiary-fixed-variant": "#004e59",
+              "secondary-fixed": "#dee0ff",
+              "outline": "#908f9d",
+              "tertiary-fixed-dim": "#44d8f1",
+              "on-tertiary-container": "#00a6bc",
+              "primary-fixed-dim": "#bdc2ff",
+              "primary-fixed": "#e0e0ff",
+              "on-surface": "#e2e2e4",
+              "error-container": "#93000a",
+              "surface-dim": "#111415",
+              "error": "#ffb4ab",
+              "inverse-surface": "#e2e2e4",
+              "surface-variant": "#333537",
+              "secondary": "#bac3ff",
+              "inverse-primary": "#4c56af",
+              "on-secondary": "#08218a",
+              "inverse-on-surface": "#2f3132",
+              "on-secondary-fixed": "#00105c",
+              "on-primary-fixed-variant": "#343d96",
+              "tertiary-fixed": "#a1efff",
+              "on-secondary-container": "#a8b4ff",
+              "background": "#111415",
+              "on-tertiary-fixed": "#001f25",
+              "surface-tint": "#bdc2ff",
+              "on-primary-container": "#8690ee",
+              "on-primary-fixed": "#000767",
+              "surface": "#111415",
+              "secondary-container": "#2c3ea3",
+              "on-surface-variant": "#c6c5d4",
+              "secondary-fixed-dim": "#bac3ff",
+              "on-error-container": "#ffdad6",
+              "primary": "#bdc2ff",
+              "primary-container": "#1a237e",
+              "on-primary": "#1b247f",
+              "tertiary": "#44d8f1",
+              "on-error": "#690005",
+              "on-background": "#e2e2e4",
+              "tertiary-container": "#00353d",
+              "surface-container-high": "#282a2c",
+              "surface-bright": "#37393b",
+              "on-tertiary": "#00363e"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30 min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-[#111415]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#bdc2ff] hover:bg-[#282a2c] transition-colors p-2 rounded-full scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Manrope'] text-lg font-semibold tracking-tight text-[#e2e2e4]">SleepGuide</h1>
+</div>
+<div class="h-10 w-10 rounded-full overflow-hidden bg-surface-container-high ring-2 ring-primary/20">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="portrait of a focused university student with glasses in a dimly lit library environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBm3JC9c77QoAAkfzWRNQ-3PITPtOcjukpEKcknHkDJUqm1mHkTJmbR-xLClmUfswGnbUx9QkXmKvigTbNqFUwA7eiZQfKZLhLg6Huq1v0zLwE_WwCdvLdE_l01_SjD9CyBetED_3TOF1yRX96DvnsqCMsJhGkREuHu71nHSKx5FGjt8zhKhZHeH0Av4uHMACI7kShuQUIKi2gXt2UMUZZbIG_v95BLRFywaHQ48nxN1aCnizkzLRkhatjqxlGtswmDyRMSIflKVEXj"/>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Editorial Header Section -->
+<section class="space-y-2">
+<span class="text-primary font-headline font-bold text-sm tracking-[0.2em] uppercase">Configuration</span>
+<h2 class="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Study Plan</h2>
+<p class="text-on-surface-variant text-lg">Align your academic intensity with your natural circadian rhythm to minimize burnout.</p>
+</section>
+<!-- Form Canvas -->
+<form class="space-y-8">
+<!-- Time Range Picker: Asymmetric Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-6 rounded-3xl space-y-4">
+<div class="flex items-center gap-3 text-tertiary">
+<span class="material-symbols-outlined" data-icon="wb_sunny">wb_sunny</span>
+<span class="font-headline font-bold text-sm uppercase tracking-wider">Start of Study</span>
+</div>
+<input class="w-full bg-transparent border-none text-4xl font-headline font-extrabold text-on-surface focus:ring-0 p-0 cursor-pointer" type="time" value="09:00"/>
+<p class="text-xs text-on-surface-variant">Recommended: Start after 8h sleep.</p>
+</div>
+<div class="bg-surface-container-low p-6 rounded-3xl space-y-4">
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined" data-icon="bedtime">bedtime</span>
+<span class="font-headline font-bold text-sm uppercase tracking-wider">End of Study</span>
+</div>
+<input class="w-full bg-transparent border-none text-4xl font-headline font-extrabold text-on-surface focus:ring-0 p-0 cursor-pointer" type="time" value="18:00"/>
+<p class="text-xs text-on-surface-variant">Recommended: 2h before bed.</p>
+</div>
+</div>
+<!-- Daily Goal Slider: Visual Hierarchy -->
+<div class="bg-surface-container-low p-8 rounded-3xl space-y-6">
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<label class="font-headline font-bold text-sm uppercase tracking-wider text-on-surface-variant">Daily Focus Goal</label>
+<h3 class="text-3xl font-headline font-extrabold text-primary">8.0 <span class="text-lg font-medium text-on-surface-variant">hours</span></h3>
+</div>
+<div class="h-12 w-12 bg-primary-container/30 rounded-2xl flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="target">target</span>
+</div>
+</div>
+<input class="w-full h-2 bg-surface-container-highest rounded-full appearance-none cursor-pointer accent-primary" max="16" min="1" type="range" value="8"/>
+<div class="flex justify-between text-xs font-medium text-on-surface-variant uppercase tracking-tighter">
+<span>1 Hour</span>
+<span>Optimal (6-8)</span>
+<span>16 Hours</span>
+</div>
+</div>
+<!-- Recurring Schedule: Chip Selection -->
+<div class="space-y-4">
+<label class="font-headline font-bold text-sm uppercase tracking-wider text-on-surface-variant px-2">Recurring Schedule</label>
+<div class="flex flex-wrap gap-3">
+<button class="px-6 py-3 rounded-2xl bg-primary text-on-primary font-bold text-sm transition-all shadow-lg shadow-primary/10" type="button">Mon</button>
+<button class="px-6 py-3 rounded-2xl bg-primary text-on-primary font-bold text-sm transition-all shadow-lg shadow-primary/10" type="button">Tue</button>
+<button class="px-6 py-3 rounded-2xl bg-primary text-on-primary font-bold text-sm transition-all shadow-lg shadow-primary/10" type="button">Wed</button>
+<button class="px-6 py-3 rounded-2xl bg-primary text-on-primary font-bold text-sm transition-all shadow-lg shadow-primary/10" type="button">Thu</button>
+<button class="px-6 py-3 rounded-2xl bg-primary text-on-primary font-bold text-sm transition-all shadow-lg shadow-primary/10" type="button">Fri</button>
+<button class="px-6 py-3 rounded-2xl bg-surface-container-high text-on-surface-variant font-bold text-sm hover:bg-surface-bright transition-colors" type="button">Sat</button>
+<button class="px-6 py-3 rounded-2xl bg-surface-container-high text-on-surface-variant font-bold text-sm hover:bg-surface-bright transition-colors" type="button">Sun</button>
+</div>
+</div>
+<!-- Smart Automation: Glassmorphism Alert Style -->
+<div class="p-6 rounded-3xl bg-surface-container-low flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<div class="h-14 w-14 rounded-2xl bg-tertiary-container/40 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-on-surface">Automatically track breaks</h4>
+<p class="text-sm text-on-surface-variant">Pauses timer when drowsiness is detected.</p>
+</div>
+</div>
+<!-- Custom Toggle -->
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-14 h-8 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+<!-- Action Button -->
+<div class="pt-4">
+<button class="w-full h-16 rounded-2xl bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-extrabold text-lg flex items-center justify-center gap-3 shadow-2xl shadow-primary/20 scale-100 active:scale-95 transition-all" type="submit">
+<span>Save Study Plan</span>
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+</button>
+<p class="text-center text-on-surface-variant text-xs mt-6 px-12">Changes to your study plan will update your daily drowsiness prediction models.</p>
+</div>
+</form>
+</main>
+<!-- Navigation Drawer (Desktop Placeholder Logic) -->
+<aside class="hidden md:flex fixed left-0 top-0 h-full w-80 bg-[#111415] flex-col p-6 gap-2 z-[60] shadow-2xl shadow-[#1b247f]/10 rounded-r-2xl border-r border-outline-variant/10">
+<div class="flex items-center gap-4 mb-10 px-2">
+<div class="h-12 w-12 rounded-full overflow-hidden bg-primary-container">
+<img alt="Student Profile" class="w-full h-full object-cover" data-alt="student profile headshot for a science application" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAn77VxmhKJqgvLa5wgFlYnhjqMtBPXuOJ8pTFHKh45OXksTIO-OfpqNaH25wYD4vmVHm-2l1yRAncULyu4SLIveaMnhzmLAN5-WpjJWqPqayaRm9gygBoHmKwcW2T7FyptkcaScNGF590yPB-mQoikMelkynxZYQDmYCw33uQy9SZz-CNhyG2hShvu6GmidVanRxKaWD7JTREAYy5Hauyg07qsxYPxLAXznyJsm_zE3vk9MyeU5Kmq7kZw5RTDwIIPcbcSHOY8fFTn"/>
+</div>
+<div>
+<h3 class="text-[#e2e2e4] font-black text-sm">Academic User</h3>
+<p class="text-[#c6c5d4] opacity-80 text-xs">Next Exam: 2 Days</p>
+</div>
+</div>
+<nav class="space-y-2">
+<a class="flex items-center gap-4 p-4 text-[#c6c5d4] opacity-80 hover:bg-[#282a2c] rounded-xl transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Manrope'] font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 p-4 text-[#c6c5d4] opacity-80 hover:bg-[#282a2c] rounded-xl transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+<span class="font-['Manrope'] font-medium text-sm">Devices</span>
+</a>
+<a class="flex items-center gap-4 p-4 bg-gradient-to-r from-[#1a237e] to-transparent text-[#bdc2ff] border-l-4 border-[#bdc2ff] rounded-r-xl transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-['Manrope'] font-medium text-sm">Study Plan</span>
+</a>
+<a class="flex items-center gap-4 p-4 text-[#c6c5d4] opacity-80 hover:bg-[#282a2c] rounded-xl transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-['Manrope'] font-medium text-sm">Exam Dates</span>
+</a>
+<div class="mt-auto pt-10">
+<a class="flex items-center gap-4 p-4 text-[#c6c5d4] opacity-80 hover:bg-[#282a2c] rounded-xl transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="font-['Manrope'] font-medium text-sm">Help</span>
+</a>
+</div>
+</nav>
+</aside>
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 w-full rounded-t-3xl z-50 pb-safe bg-[#111415]/90 backdrop-blur-2xl shadow-[0_-1px_20px_rgba(27,36,127,0.06)] flex justify-around items-center h-20 w-full px-4">
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#1a237e]/40 text-[#bdc2ff] rounded-2xl px-5 py-2 scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Schedule</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

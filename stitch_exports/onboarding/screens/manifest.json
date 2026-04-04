@@ -1,0 +1,173 @@
+{
+  "project": {
+    "title": "Onboarding",
+    "id": "16218346004387712907"
+  },
+  "exportAttempt": {
+    "date": "2026-04-04",
+    "method": "curl -L",
+    "status": "success",
+    "error": null
+  },
+  "designSystem": {
+    "instanceId": "asset-stub-assets-3b70cc54ba9d4901bcaf5e1efd67afc3-1775054917951",
+    "assetId": "assets/3b70cc54ba9d4901bcaf5e1efd67afc3",
+    "displayName": "Nocturne Scholar",
+    "localExports": [
+      "design-system/nocturne-scholar.md",
+      "design-system/theme.json"
+    ]
+  },
+  "screens": [
+    {
+      "order": 1,
+      "title": "Onboarding",
+      "id": "53e34619e6ea4c10a791053e90b97cfd",
+      "width": 972,
+      "height": 2100,
+      "files": {
+        "screenshot": "screens/01-onboarding.png",
+        "html": "screens/01-onboarding.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0ugHTGAdSzpvsQsuI0vhc91_b1EpIm-kD1_nEwugRqAt-o2fnozo04_KjUngSQl_cHBP_9oHvf8ndlbzI8JGjzA5b3G8c1RaE11WJe5iQ8aPL-34IIqPTHfxL8oU0inC89s-vuenZ64YqaZIEWYpC00s8MbDPdVEucn4obRjEgAU91JcbfbQ0apS6VRzA5d2-Iw99xSquEOM1il0qHobvm1dtDULhA2PybX4SRU86STjuf1Us51EXlef6Qc",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzczMTg3MTM1NWY4YzRlOGU4N2JhYmVjZDU5YzQ0NDcyEgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 2,
+      "title": "Home Dashboard",
+      "id": "01609940d20845ffb130b9faec7296ce",
+      "width": 780,
+      "height": 3474,
+      "files": {
+        "screenshot": "screens/02-home-dashboard.png",
+        "html": "screens/02-home-dashboard.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0ugH9Ke7tWdIHtcIqMk9wj1jd9nHqBM6Iqr4_z8qqOwsOUbdJbIg4F84HKM67v1iPzCnweF45AFRvW9SYI1W1Kazvg4FugT5GVMTi48j-29TPhAw7rFF8spsII566nB5tVsqsFoqoIE3ggCcSkvTERL0Sr8o0g7qhEUNIc_kcAplp6ho3S7UA5p-bDRmKewbUQ3J7RlWTDhop3pQ05HreJwlJtud0Plza-f2xz432_bX6OHQOdYwGNmStU5t",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzZlNWUyZTUwZTNjMzQ5Y2Q5ODZmZDU2Y2Y1YjEyODYwEgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 3,
+      "title": "Analysis Hub (No Tabs)",
+      "id": "473d357d6fbd4ce6b8091ec80f7e78f3",
+      "width": 858,
+      "height": 2768,
+      "files": {
+        "screenshot": "screens/03-analysis-hub-no-tabs.png",
+        "html": "screens/03-analysis-hub-no-tabs.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0uhh0kzeV1oT3lMAMS6dIL7VgMO_fDJ2pdXli3mqc0XU7xQzF7ON882h7vPFNjWNhSXm00K02tij6pKUWysDCyJ1i8_bJCumpFi454mdZCihI8AioMtDXZSgxJsmJxgnnlCzomgneAdPVtRf-gQt4zkwDDFfGTeXAwoTi8XawxZazbvDiG-y2GfMsr0yDDPm15dHx8CdfH_W31dtSIxH0CrK7KIrj54AqElBm3w3vrBy3dqvnDOYIKlFkzxu",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzNhNzkzZWViOWNmMjQ2NWU4YmMxZjFmY2JhMjBlMjYwEgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 4,
+      "title": "Sleep Analysis Details",
+      "id": "c77d66249bdf4a03bd1f9ae28a7a799f",
+      "width": 780,
+      "height": 3794,
+      "files": {
+        "screenshot": "screens/04-sleep-analysis-details.png",
+        "html": "screens/04-sleep-analysis-details.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0uh3K7BkXs-gA19s4t4VKpK1KRdlFKNRBvWccvr32VpztbjnCLl6NmgRIBqllDFRiPGZeiwl2JPYLF7xD2X70CbyXGhaOs6ZauG_aSL9eE7A5WDqeY3H4M-HRG-8OUDtHs3IYOgItSG13n7pBZ4we56vWM4INVQKevOc4mWShvslizTulqD5UxQO3QXxU0HYBsuX2ikjFBt57EIerA6Y53Aa0iQIw-863NcD9SRsKW3uKGFm7n6HxSwEd1Tv",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzhlMzU5NDk2YjNhMzQ4MDBhNjU0ZTA4YmM0MGQ0MDQ2EgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 5,
+      "title": "Drowsiness Analysis Details",
+      "id": "e42fd4e1bb61468aa76ecdc48a45151b",
+      "width": 780,
+      "height": 3814,
+      "files": {
+        "screenshot": "screens/05-drowsiness-analysis-details.png",
+        "html": "screens/05-drowsiness-analysis-details.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0ui8QtScrjCb_ppCczI06mpB4TZ2RGgVqFS56YsVWAfMtvy9cNMxsziCXNf2EKqA0T1HezPUQOsPhpjcHDvSlW_worWhpX12UY4EDo27ankMLRxPwMld04napzGL5kJEUYhBkSgaEUrpXQBj8hNe_Jzr_VGOhWmif1GZT_aqNdw0NdwIT4OkHlIE2W-tF294yciLwSGhzIsRG2_SKLhoGHXBqSXbNy_ROjWrps9N1FAo_DwWr9ENlbOo09f4",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzg1N2JjODI5YmM4YzRhMmFiYzI2ZTNiYmNkNmE4MWRjEgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 6,
+      "title": "Device Connection",
+      "id": "fb1618cf082e4fa0b8976c4568ef80f9",
+      "width": 780,
+      "height": 2512,
+      "files": {
+        "screenshot": "screens/06-device-connection.png",
+        "html": "screens/06-device-connection.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0uhPBIoXGdlo02gvhO90mDZ3iGwRtw6iMK5R8zP8bvOJto9qiMgnKZ-Cfo4X2FTcWqFHZMs9d82ok_4rmZ0ky2hx3XJtYaTpT3QuKDeE9bJXA3ArYcnJ55P9gdmP8iO06DAzNvBjz6No0nxsuRsgymrAdhal3kX2vaOCX1M3a8-MOCe8YLAKURnE2vf_0XAuq1DBIhtusJ3Jouq3DwZFxdVg9AHNgdVH953lHN2hLeKgDPCicamvBDBlbd8",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzQ1MGMxNjQzNzE3MzRlYjNiMzFkYjU2Yjc2NThlYTU0EgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 7,
+      "title": "Sleep Schedule Suggestion",
+      "id": "c178cf7460214e8197e44a78132a3a6f",
+      "width": 780,
+      "height": 4692,
+      "files": {
+        "screenshot": "screens/07-sleep-schedule-suggestion.png",
+        "html": "screens/07-sleep-schedule-suggestion.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0ugsic9NT9oJ67g6PBi0fUQpqOO49JlBpl2qmyc1oStdKfJdknZ4tIIaofyjCvhOzA80xQQwN7dajvFmCfE75Xf7Wg5ZrMRHIlREtK2fqDS8GPfPbcGT8SZLSjz0sfgMASWDmihzjXGSHA8G2Zn2QHrPGzpFNGnZmRL8J79Gqidqbh6obaG8c3t1mfIzr9ayAaktF0QFOMlnTbacskBi8wcrO7J0hwlRvUwMVQcK1S04y7fmRtFq8Zy4knOS",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwZjU3M2IyYzg0ODQ0NTI5ZTUzNzA0NGQwOTQ5MDA1EgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 8,
+      "title": "Study Plan Input (Back Button)",
+      "id": "73b6a48522f54ee0b6dd515587d857f5",
+      "width": 780,
+      "height": 3036,
+      "files": {
+        "screenshot": "screens/08-study-plan-input-back-button.png",
+        "html": "screens/08-study-plan-input-back-button.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0ujR5T8bRNQSCNMWzIBwZYUDcSkC2-UDsMC-xWVpupBzuiiPGOQHDmFta9MRAADNwPtxJ3JBaXMl4bqwjs5lDE6yzu_ub1kaf5VdcDviSvN0rTCb4GmVErnQfT1WQDR7OjnxMFQxjGaBxz3DknBIwokjJteP_eTvUAouX2tKIGEzSmIkzuIpyiwWk8WvwspQtMc0ktBOBqZ2jhd7U3g8L0TKX8r3T1xGP_HfxzKKejVEI8_bdmZDeRbC1WGJ",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzEyNDkzNzQ0OTU5MDRkYWFiM2ZkOTQ2MzYyOTA2NTU0EgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 9,
+      "title": "Exam Schedule Management",
+      "id": "f0a78a06ce904c0abdb119fb10294fa5",
+      "width": 780,
+      "height": 3736,
+      "files": {
+        "screenshot": "screens/09-exam-schedule-management.png",
+        "html": "screens/09-exam-schedule-management.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0ugKn8P7EREGd5T7a8mM_3KuvroNQ5YE_inefDEJM9NFN9Y5QCE6n58jOToVNRvRiqDBBlBfi0kKETqYIlZVDyylYVEIh9kZzwazEo_tnCLCU9Qq_nN11rJxBysHr3uykf7glSOX5KiZnWhOczHWKJn6i8IIWCMdi4gxp7AOvsvOJG0WsA92VxocWo7uxr3kq1kW0KAQDh9wuuYfhlYdJTJMMk5uk2tXkzuajW2B__DqMYWrepGruPZdu6Q",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzA2Y2Q5MWQ0YWU4ZTRlNzU5NTllNjVkOTc3NDg2ZGU1EgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    },
+    {
+      "order": 10,
+      "title": "Settings",
+      "id": "49703f87921a4950b78a0147788ffee3",
+      "width": 780,
+      "height": 2798,
+      "files": {
+        "screenshot": "screens/10-settings.png",
+        "html": "screens/10-settings.html"
+      },
+      "urls": {
+        "screenshot": "https://lh3.googleusercontent.com/aida/ADBb0uiCMdOdrTzhXJvTPKWDFUIbT3QILsN9yQmItAZy-0wTidFBKVL49L7fHE9bBGHMaTfBVYxsQ1PlkyMBK4P-zqGAJt0oDpQU8ZRg82nClFu0zcJks3FtpOaH9hBS8WmhXhK5xhO78AawDEJd6jTRK6Kue_IzKvc2rpcIUO1T0k6GXkmMoK-94iyeo1ZjL8bsdtSVqn4-6bB27zZqt9l1odTkNqh21K3xbJy29DMkBZ5AGkrSTD1eIizD5zDC",
+        "html": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzBhYzlmODU2ODZjZDQxMThiYjBhNzQxMjg5MTZiYjgzEgsSBxC77_S8xwUYAZIBJAoKcHJvamVjdF9pZBIWQhQxNjIxODM0NjAwNDM4NzcxMjkwNw&filename=&opi=89354086"
+      }
+    }
+  ]
+}

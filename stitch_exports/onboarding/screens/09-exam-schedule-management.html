@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SleepGuide - Exam Schedule</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#454652",
+                        "surface-container": "#1e2021",
+                        "surface-container-low": "#1a1c1d",
+                        "on-secondary-fixed-variant": "#293ca0",
+                        "surface-container-lowest": "#0c0e10",
+                        "surface-container-highest": "#333537",
+                        "on-tertiary-fixed-variant": "#004e59",
+                        "secondary-fixed": "#dee0ff",
+                        "outline": "#908f9d",
+                        "tertiary-fixed-dim": "#44d8f1",
+                        "on-tertiary-container": "#00a6bc",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "primary-fixed": "#e0e0ff",
+                        "on-surface": "#e2e2e4",
+                        "error-container": "#93000a",
+                        "surface-dim": "#111415",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#e2e2e4",
+                        "surface-variant": "#333537",
+                        "secondary": "#bac3ff",
+                        "inverse-primary": "#4c56af",
+                        "on-secondary": "#08218a",
+                        "inverse-on-surface": "#2f3132",
+                        "on-secondary-fixed": "#00105c",
+                        "on-primary-fixed-variant": "#343d96",
+                        "tertiary-fixed": "#a1efff",
+                        "on-secondary-container": "#a8b4ff",
+                        "background": "#111415",
+                        "on-tertiary-fixed": "#001f25",
+                        "surface-tint": "#bdc2ff",
+                        "on-primary-container": "#8690ee",
+                        "on-primary-fixed": "#000767",
+                        "surface": "#111415",
+                        "secondary-container": "#2c3ea3",
+                        "on-surface-variant": "#c6c5d4",
+                        "secondary-fixed-dim": "#bac3ff",
+                        "on-error-container": "#ffdad6",
+                        "primary": "#bdc2ff",
+                        "primary-container": "#1a237e",
+                        "on-primary": "#1b247f",
+                        "tertiary": "#44d8f1",
+                        "on-error": "#690005",
+                        "on-background": "#e2e2e4",
+                        "tertiary-container": "#00353d",
+                        "surface-container-high": "#282a2c",
+                        "surface-bright": "#37393b",
+                        "on-tertiary": "#00363e"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(40, 42, 44, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen pb-24">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-[#111415]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#bdc2ff] hover:bg-[#282a2c] transition-colors p-2 rounded-full active:scale-90">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="text-xl font-bold text-[#e2e2e4] tracking-tight font-headline">SleepGuide</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a student with a focused expression, soft cinematic lighting in a study environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4bVfMREW0wgAd3v0_MUVw8C8816fHVGM5OuerzV5WMV5nE2rNgVZqHwnbp2Lm-1NgZp4BAOAalKzNc2Kp3Y3E0RduUpDSqshJ0E-Un222Y3cCLbLsTejd8kwTlHJ6pBF6jQDu_z_ROavQU4X1U1vZYrC4kQ6qtL9GSPc7Se5ZrWUrCgktsdKjsgzdTU22ZqFKrRBfs6S4D7kc7yoLMRYT8vajU6H4VX5UfowtBi7cEpzDqJgmJ0BsvNuos5tm23vGgQte2zAFZ8qy"/>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-4xl mx-auto">
+<!-- Hero Section: D-Day Countdown -->
+<section class="relative overflow-hidden rounded-[2rem] p-8 mb-10 bg-gradient-to-br from-primary-container to-surface-container-lowest">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]" data-icon="history_edu">history_edu</span>
+</div>
+<div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<span class="inline-block px-3 py-1 rounded-full bg-tertiary-container text-tertiary text-xs font-bold tracking-widest uppercase mb-4">Upcoming Milestone</span>
+<h2 class="font-headline text-3xl md:text-4xl font-extrabold tracking-tight text-on-surface mb-2">Mock Exam - June 15th</h2>
+<p class="text-on-surface-variant font-medium">Prepare your cognitive focus for the final stretch.</p>
+</div>
+<div class="flex flex-col items-center justify-center bg-surface-bright/20 backdrop-blur-md rounded-3xl p-6 min-w-[140px] border border-white/5">
+<span class="text-sm font-bold text-primary uppercase tracking-widest">Countdown</span>
+<span class="text-5xl font-extrabold font-headline text-primary-fixed">D-15</span>
+</div>
+</div>
+</section>
+<!-- Toggle Section: Sync with Device -->
+<div class="glass-card rounded-2xl p-6 mb-10 flex items-center justify-between border border-white/5">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="sync" style="font-variation-settings: 'FILL' 1;">sync</span>
+</div>
+<div>
+<h3 class="font-semibold text-on-surface">Sync with Device</h3>
+<p class="text-sm text-on-surface-variant">Adjust my sleep plan for these exams</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-7 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Section: Timetable -->
+<div class="mb-10">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h3 class="font-headline text-2xl font-bold">Exam Timetable</h3>
+<p class="text-on-surface-variant text-sm">Strategic schedule for June 15th session</p>
+</div>
+<button class="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                    Add Exam
+                </button>
+</div>
+<div class="space-y-4">
+<!-- Exam Entry 1 -->
+<div class="group flex flex-col md:flex-row md:items-center gap-4 p-5 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-surface-container-high font-headline font-bold text-primary">
+                        09:00
+                    </div>
+<div class="flex-grow">
+<div class="flex items-center gap-3 mb-1">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<h4 class="font-bold text-lg">Advanced Mathematics</h4>
+</div>
+<div class="flex items-center gap-4 text-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span> 9:00 AM - 10:40 AM</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base" data-icon="location_on">location_on</span> Hall B-4</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-lg bg-error-container/30 text-error text-[10px] font-bold uppercase tracking-wider">High Priority</span>
+<button class="p-2 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Exam Entry 2 -->
+<div class="group flex flex-col md:flex-row md:items-center gap-4 p-5 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-surface-container-high font-headline font-bold text-tertiary">
+                        13:30
+                    </div>
+<div class="flex-grow">
+<div class="flex items-center gap-3 mb-1">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<h4 class="font-bold text-lg">Applied Physics</h4>
+</div>
+<div class="flex items-center gap-4 text-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span> 1:30 PM - 3:00 PM</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base" data-icon="location_on">location_on</span> Physics Lab 2</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-lg bg-tertiary-container/30 text-tertiary text-[10px] font-bold uppercase tracking-wider">Medium</span>
+<button class="p-2 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Exam Entry 3 -->
+<div class="group flex flex-col md:flex-row md:items-center gap-4 p-5 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors opacity-75">
+<div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-surface-container-high font-headline font-bold text-on-surface-variant">
+                        16:00
+                    </div>
+<div class="flex-grow">
+<div class="flex items-center gap-3 mb-1">
+<span class="w-2 h-2 rounded-full bg-surface-variant"></span>
+<h4 class="font-bold text-lg">Technical Writing</h4>
+</div>
+<div class="flex items-center gap-4 text-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span> 4:00 PM - 5:00 PM</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base" data-icon="location_on">location_on</span> Seminar Room</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-lg bg-surface-variant/30 text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Low</span>
+<button class="p-2 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Focus Advisory -->
+<div class="p-6 rounded-3xl bg-[#00353d]/40 border border-[#00a6bc]/20 mb-10">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-tertiary" data-icon="lightbulb" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+<div>
+<h4 class="font-bold text-tertiary mb-1 uppercase tracking-widest text-xs">Sleep Insight</h4>
+<p class="text-sm leading-relaxed text-[#a1efff]/80">For your 9:00 AM Math exam, we recommend shifting your sleep window 30 minutes earlier starting tonight to reach peak alertness by the first bell.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 pb-safe bg-[#111415]/90 backdrop-blur-2xl shadow-[0_-1px_20px_rgba(27,36,127,0.06)] flex justify-around items-center h-20 w-full px-4">
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#1a237e]/40 text-[#bdc2ff] rounded-2xl px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Schedule</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

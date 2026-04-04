@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SleepGuide Analysis Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface": "#111415",
+              "primary": "#bdc2ff",
+              "inverse-on-surface": "#2f3132",
+              "secondary-fixed-dim": "#bac3ff",
+              "on-primary": "#1b247f",
+              "error-container": "#93000a",
+              "surface-dim": "#111415",
+              "on-secondary-fixed": "#00105c",
+              "error": "#ffb4ab",
+              "surface-container-high": "#282a2c",
+              "on-tertiary-container": "#00a6bc",
+              "on-tertiary": "#00363e",
+              "secondary": "#bac3ff",
+              "surface-container-low": "#1a1c1d",
+              "primary-container": "#1a237e",
+              "on-tertiary-fixed": "#001f25",
+              "on-secondary-fixed-variant": "#293ca0",
+              "on-primary-fixed": "#000767",
+              "primary-fixed": "#e0e0ff",
+              "tertiary": "#44d8f1",
+              "surface-variant": "#333537",
+              "secondary-fixed": "#dee0ff",
+              "on-secondary": "#08218a",
+              "outline": "#908f9d",
+              "on-surface": "#e2e2e4",
+              "on-error": "#690005",
+              "on-error-container": "#ffdad6",
+              "on-primary-fixed-variant": "#343d96",
+              "inverse-primary": "#4c56af",
+              "on-secondary-container": "#a8b4ff",
+              "tertiary-container": "#00353d",
+              "on-tertiary-fixed-variant": "#004e59",
+              "inverse-surface": "#e2e2e4",
+              "on-surface-variant": "#c6c5d4",
+              "on-background": "#e2e2e4",
+              "surface-bright": "#37393b",
+              "background": "#111415",
+              "surface-container-lowest": "#0c0e10",
+              "primary-fixed-dim": "#bdc2ff",
+              "tertiary-fixed-dim": "#44d8f1",
+              "outline-variant": "#454652",
+              "surface-tint": "#bdc2ff",
+              "tertiary-fixed": "#a1efff",
+              "surface-container-highest": "#333537",
+              "secondary-container": "#2c3ea3",
+              "surface-container": "#1e2021",
+              "on-primary-container": "#8690ee"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(40, 42, 44, 0.4);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      body {
+        background-color: #111415;
+        color: #e2e2e4;
+        font-family: 'Inter', sans-serif;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body selection:bg-primary/30">
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full z-50 bg-[#111415]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#bdc2ff] hover:bg-[#282a2c] transition-colors p-2 rounded-full scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-xl font-bold text-[#e2e2e4] tracking-tight font-headline">SleepGuide</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30">
+<img alt="User Profile" data-alt="close-up portrait of a professional man with kind expression, soft studio lighting on dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7LFVXV_-KQfmHr7r7pnqVrpfluXIuAHKLGK-2Zwco62RDB7BRA5HQHDoao0G9FUUCkynUn3xMTNZwGGPoFeMtR1ymzLT59JPRsdrFeuD2qdY5MghZwgEXZNXRZLk6ZcORfY9NIHGUTzu5FjX1biavdvPKFAp10u5G3phSi2zYhHU693fi2gN8gXuZLOh74qeEHvrKgQiOKacK5prRKbkxpuXQF484IfaW_-6w6YTCJ59eD4XJDNyo3ywmRpeUzeO6HhNNw-TER-pM"/>
+</div>
+</div>
+</nav>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto">
+<!-- Segmented Control (Tabs) -->
+<!-- Header Section -->
+<header class="mb-12">
+<h1 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface mb-2">Analysis Hub</h1>
+<p class="text-on-surface-variant text-sm font-medium">Your circadian insights for the last 24 hours.</p>
+</header>
+<!-- Bento Grid Analysis Summary -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+<!-- Sleep Score Card -->
+<div class="glass-card p-8 rounded-3xl flex flex-col justify-between aspect-square md:aspect-auto md:h-80 group cursor-pointer hover:bg-surface-container-high/60 transition-all">
+<div class="flex justify-between items-start">
+<div class="p-3 bg-primary-container/40 rounded-2xl">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">bedtime</span>
+</div>
+<span class="text-primary text-xs font-bold tracking-widest uppercase">Summary</span>
+</div>
+<div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline text-6xl font-extrabold tracking-tighter text-on-surface">84</span>
+<span class="font-headline text-2xl font-bold text-on-surface-variant">/100</span>
+</div>
+<h2 class="font-headline text-xl font-bold text-on-surface mt-2">Sleep Quality</h2>
+<p class="text-on-surface-variant text-sm mt-1 leading-relaxed">Deep sleep was 12% higher than your average yesterday.</p>
+</div>
+<div class="flex items-center gap-2 text-primary font-semibold text-sm">
+                    View Details
+                    <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+<!-- Drowsiness Alert Card -->
+<div class="glass-card p-8 rounded-3xl flex flex-col justify-between aspect-square md:aspect-auto md:h-80 group cursor-pointer hover:bg-surface-container-high/60 transition-all">
+<div class="flex justify-between items-start">
+<div class="p-3 bg-error-container/20 rounded-2xl">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<span class="text-error text-xs font-bold tracking-widest uppercase">Alerts</span>
+</div>
+<div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline text-6xl font-extrabold tracking-tighter text-on-surface">3</span>
+<span class="font-headline text-lg font-bold text-on-surface-variant uppercase tracking-widest">Today</span>
+</div>
+<h2 class="font-headline text-xl font-bold text-on-surface mt-2">Drowsiness</h2>
+<p class="text-on-surface-variant text-sm mt-1 leading-relaxed">Peak fatigue occurred around 2:15 PM during your study session.</p>
+</div>
+<div class="flex items-center gap-2 text-primary font-semibold text-sm">
+                    Review Patterns
+                    <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Secondary Insights Section (Asymmetric) -->
+<section class="space-y-6">
+<h3 class="font-headline text-lg font-bold text-on-surface px-1">Detailed Logs</h3>
+<!-- Long Card: Sleep Analysis Entry -->
+<div class="bg-surface-container-low p-6 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-5">
+<div class="w-14 h-14 rounded-full bg-tertiary-container/30 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">monitoring</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-on-surface">Sleep Stage Trends</h4>
+<p class="text-on-surface-variant text-sm">7h 42m total sleep duration</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+<!-- Long Card: Drowsiness Analysis Entry -->
+<div class="bg-surface-container-low p-6 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-5">
+<div class="w-14 h-14 rounded-full bg-primary-container/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">visibility</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-on-surface">Ocular Fatigue Data</h4>
+<p class="text-on-surface-variant text-sm">Blink rate and PERCLOS metrics</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</section>
+<!-- Aesthetic Background Elements -->
+<div class="fixed top-[-10%] right-[-10%] w-96 h-96 bg-primary-container/10 blur-[120px] rounded-full -z-10"></div>
+<div class="fixed bottom-[-10%] left-[-10%] w-96 h-96 bg-tertiary-container/10 blur-[120px] rounded-full -z-10"></div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 pb-safe bg-[#111415]/90 backdrop-blur-2xl shadow-[0_-1px_20px_rgba(27,36,127,0.06)] flex justify-around items-center h-20 w-full px-4">
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#1a237e]/40 text-[#bdc2ff] rounded-2xl px-5 py-2 scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Schedule</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

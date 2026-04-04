@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SleepGuide - Drowsiness Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#454652",
+                        "surface-container": "#1e2021",
+                        "surface-container-low": "#1a1c1d",
+                        "on-secondary-fixed-variant": "#293ca0",
+                        "surface-container-lowest": "#0c0e10",
+                        "surface-container-highest": "#333537",
+                        "on-tertiary-fixed-variant": "#004e59",
+                        "secondary-fixed": "#dee0ff",
+                        "outline": "#908f9d",
+                        "tertiary-fixed-dim": "#44d8f1",
+                        "on-tertiary-container": "#00a6bc",
+                        "primary-fixed-dim": "#bdc2ff",
+                        "primary-fixed": "#e0e0ff",
+                        "on-surface": "#e2e2e4",
+                        "error-container": "#93000a",
+                        "surface-dim": "#111415",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#e2e2e4",
+                        "surface-variant": "#333537",
+                        "secondary": "#bac3ff",
+                        "inverse-primary": "#4c56af",
+                        "on-secondary": "#08218a",
+                        "inverse-on-surface": "#2f3132",
+                        "on-secondary-fixed": "#00105c",
+                        "on-primary-fixed-variant": "#343d96",
+                        "tertiary-fixed": "#a1efff",
+                        "on-secondary-container": "#a8b4ff",
+                        "background": "#111415",
+                        "on-tertiary-fixed": "#001f25",
+                        "surface-tint": "#bdc2ff",
+                        "on-primary-container": "#8690ee",
+                        "on-primary-fixed": "#000767",
+                        "surface": "#111415",
+                        "secondary-container": "#2c3ea3",
+                        "on-surface-variant": "#c6c5d4",
+                        "secondary-fixed-dim": "#bac3ff",
+                        "on-error-container": "#ffdad6",
+                        "primary": "#bdc2ff",
+                        "primary-container": "#1a237e",
+                        "on-primary": "#1b247f",
+                        "tertiary": "#44d8f1",
+                        "on-error": "#690005",
+                        "on-background": "#e2e2e4",
+                        "tertiary-container": "#00353d",
+                        "surface-container-high": "#282a2c",
+                        "surface-bright": "#37393b",
+                        "on-tertiary": "#00363e"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel {
+            background: rgba(40, 42, 44, 0.4);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#111415]/80 backdrop-blur-xl flex justify-between items-center px-4 h-16 w-full">
+<div class="flex items-center gap-2">
+<button class="hover:bg-[#282a2c] transition-colors p-2 rounded-full scale-100 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[#bdc2ff]">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-[#e2e2e4] tracking-tight font-headline">Drowsiness Analysis</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="User profile avatar" data-alt="close-up portrait of a young man with a neutral expression against a dark textured background, soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfAlalRcnaE8igcUHRGiVbwZh-Ba6scv_or7lKA-KCbWwEPup22JCMxR6xeC0z3kkyoPrPeyR2X8OlshDUTNF9TSGcvwVxQR4VQ5Ywn7Q1D23Ls5QRMVAajui4LJS6pL7CvjKQI8yo4xdfgCCLGdCxQjZ8UvEzW6cfm1yoBxd3ZZwiHO5THiWBtmoUhyJGwpyZpuWqNRLNAXgk3QppR4L2BYubaSaRmIySbVaHAkBTIkQNi3llZ-sPtX2bHgidP7czmfb0VIADmRSW"/>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-5xl mx-auto space-y-8">
+<!-- Hero Section: Total Drowsiness -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 p-8 rounded-[2rem] bg-gradient-to-br from-primary-container/40 to-surface-container shadow-2xl relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-on-surface-variant font-label text-sm uppercase tracking-widest mb-2">Daily Summary</p>
+<h2 class="font-headline text-5xl font-extrabold tracking-tighter text-on-surface mb-4">42<span class="text-primary text-2xl ml-1">mins</span></h2>
+<p class="text-on-surface-variant max-w-xs text-sm leading-relaxed">Total micro-sleep and drowsiness detected during your 8-hour study window.</p>
+</div>
+<div class="absolute top-0 right-0 p-8">
+<span class="material-symbols-outlined text-primary/20 text-8xl" style="font-variation-settings: 'FILL' 1;">bedtime</span>
+</div>
+</div>
+<div class="p-8 rounded-[2rem] bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-xl bg-tertiary-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-tertiary">psychology</span>
+</div>
+<p class="text-on-surface-variant font-label text-xs uppercase tracking-widest">Focus Score</p>
+<p class="font-headline text-3xl font-bold text-on-surface">84%</p>
+</div>
+<div class="mt-4 h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full w-[84%] bg-tertiary rounded-full"></div>
+</div>
+</div>
+</section>
+<!-- Peak Drowsiness Bar Chart -->
+<section class="p-8 rounded-[2rem] bg-surface-container-low">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface">Peak Drowsiness Hours</h3>
+<p class="text-on-surface-variant text-sm">Most frequent episodes identified between 2 PM - 4 PM</p>
+</div>
+<span class="material-symbols-outlined text-primary">equalizer</span>
+</div>
+<div class="flex items-end justify-between h-48 gap-2">
+<!-- Chart Bars -->
+<div class="flex-1 flex flex-col items-center group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[20%] group-hover:bg-primary/30 transition-all duration-500"></div>
+<p class="text-[10px] text-on-surface-variant mt-2 font-label">08:00</p>
+</div>
+<div class="flex-1 flex flex-col items-center group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[15%] group-hover:bg-primary/30 transition-all duration-500"></div>
+<p class="text-[10px] text-on-surface-variant mt-2 font-label">10:00</p>
+</div>
+<div class="flex-1 flex flex-col items-center group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[35%] group-hover:bg-primary/30 transition-all duration-500"></div>
+<p class="text-[10px] text-on-surface-variant mt-2 font-label">12:00</p>
+</div>
+<div class="flex-1 flex flex-col items-center group">
+<div class="w-full bg-primary/60 rounded-t-lg h-[85%] relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Peak</div>
+</div>
+<p class="text-[10px] text-primary mt-2 font-bold font-label">14:00</p>
+</div>
+<div class="flex-1 flex flex-col items-center group">
+<div class="w-full bg-primary/40 rounded-t-lg h-[65%]"></div>
+<p class="text-[10px] text-on-surface-variant mt-2 font-label">16:00</p>
+</div>
+<div class="flex-1 flex flex-col items-center group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[40%] group-hover:bg-primary/30 transition-all duration-500"></div>
+<p class="text-[10px] text-on-surface-variant mt-2 font-label">18:00</p>
+</div>
+<div class="flex-1 flex flex-col items-center group">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[25%] group-hover:bg-primary/30 transition-all duration-500"></div>
+<p class="text-[10px] text-on-surface-variant mt-2 font-label">20:00</p>
+</div>
+</div>
+</section>
+<!-- Insights Bento Section -->
+<section class="grid grid-cols-1 gap-6">
+<div class="p-8 rounded-[2rem] bg-surface-container-low border-l-4 border-primary">
+<span class="material-symbols-outlined text-primary mb-4">lightbulb</span>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-2">Key Insight</h4>
+<p class="text-on-surface-variant leading-relaxed">Your focus drops significantly after <span class="text-primary font-semibold">2 hours</span> of continuous study. We recommend a 15-minute mobility break at the 90-minute mark.</p>
+</div>
+</section>
+<!-- Vertical Detailed Timeline -->
+<section class="p-8 rounded-[2rem] bg-surface-container-low">
+<h3 class="font-headline text-xl font-bold text-on-surface mb-8">24-Hour Event Timeline</h3>
+<div class="relative pl-8 space-y-10">
+<!-- Timeline Line -->
+<div class="absolute left-[15px] top-2 bottom-2 w-0.5 bg-surface-container-highest"></div>
+<!-- Timeline Item: Alert -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-4 h-4 rounded-full bg-error ring-4 ring-surface-container-low"></div>
+<div class="flex justify-between items-start">
+<div>
+<p class="text-xs font-label text-error font-bold mb-1">14:12 PM</p>
+<h5 class="font-headline font-semibold text-on-surface">Critical Drowsiness Detected</h5>
+<p class="text-sm text-on-surface-variant mt-1">3-second micro-sleep detected. External alert triggered.</p>
+</div>
+<div class="p-2 rounded-xl bg-error-container/20">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item: Study -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-4 h-4 rounded-full bg-tertiary ring-4 ring-surface-container-low"></div>
+<div class="flex justify-between items-start">
+<div>
+<p class="text-xs font-label text-tertiary font-bold mb-1">12:30 PM</p>
+<h5 class="font-headline font-semibold text-on-surface">Deep Focus Session Started</h5>
+<p class="text-sm text-on-surface-variant mt-1">Luminosity and posture levels were optimal for 45 mins.</p>
+</div>
+<div class="p-2 rounded-xl bg-tertiary-container/20">
+<span class="material-symbols-outlined text-tertiary">menu_book</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item: Low Drowsiness -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-4 h-4 rounded-full bg-primary ring-4 ring-surface-container-low"></div>
+<div class="flex justify-between items-start">
+<div>
+<p class="text-xs font-label text-primary font-bold mb-1">09:45 AM</p>
+<h5 class="font-headline font-semibold text-on-surface">Moderate Fatigue</h5>
+<p class="text-sm text-on-surface-variant mt-1">Slow eye-blink rate detected. Suggested caffeine or walk.</p>
+</div>
+<div class="p-2 rounded-xl bg-primary-container/20">
+<span class="material-symbols-outlined text-primary">visibility</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 pb-safe bg-[#111415]/90 backdrop-blur-2xl shadow-[0_-1px_20px_rgba(27,36,127,0.06)] flex justify-around items-center h-20 w-full px-4">
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#1a237e]/40 text-[#bdc2ff] rounded-2xl px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Schedule</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

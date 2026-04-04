@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sleep Analysis - SleepGuide</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "outline-variant": "#454652",
+              "surface-container": "#1e2021",
+              "surface-container-low": "#1a1c1d",
+              "on-secondary-fixed-variant": "#293ca0",
+              "surface-container-lowest": "#0c0e10",
+              "surface-container-highest": "#333537",
+              "on-tertiary-fixed-variant": "#004e59",
+              "secondary-fixed": "#dee0ff",
+              "outline": "#908f9d",
+              "tertiary-fixed-dim": "#44d8f1",
+              "on-tertiary-container": "#00a6bc",
+              "primary-fixed-dim": "#bdc2ff",
+              "primary-fixed": "#e0e0ff",
+              "on-surface": "#e2e2e4",
+              "error-container": "#93000a",
+              "surface-dim": "#111415",
+              "error": "#ffb4ab",
+              "inverse-surface": "#e2e2e4",
+              "surface-variant": "#333537",
+              "secondary": "#bac3ff",
+              "inverse-primary": "#4c56af",
+              "on-secondary": "#08218a",
+              "inverse-on-surface": "#2f3132",
+              "on-secondary-fixed": "#00105c",
+              "on-primary-fixed-variant": "#343d96",
+              "tertiary-fixed": "#a1efff",
+              "on-secondary-container": "#a8b4ff",
+              "background": "#111415",
+              "on-tertiary-fixed": "#001f25",
+              "surface-tint": "#bdc2ff",
+              "on-primary-container": "#8690ee",
+              "on-primary-fixed": "#000767",
+              "surface": "#111415",
+              "secondary-container": "#2c3ea3",
+              "on-surface-variant": "#c6c5d4",
+              "secondary-fixed-dim": "#bac3ff",
+              "on-error-container": "#ffdad6",
+              "primary": "#bdc2ff",
+              "primary-container": "#1a237e",
+              "on-primary": "#1b247f",
+              "tertiary": "#44d8f1",
+              "on-error": "#690005",
+              "on-background": "#e2e2e4",
+              "tertiary-container": "#00353d",
+              "surface-container-high": "#282a2c",
+              "surface-bright": "#37393b",
+              "on-tertiary": "#00363e"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      body { background-color: #111415; color: #e2e2e4; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+      .font-headline { font-family: 'Manrope', sans-serif; }
+      .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      .glass-card { background: rgba(26, 28, 29, 0.4); backdrop-filter: blur(20px); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="pb-24">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-[#111415]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-2">
+<span aria-label="Back to Analysis Hub" class="material-symbols-outlined text-[#e2e2e4] hover:bg-[#282a2c] transition-colors p-2 rounded-full cursor-pointer transition-transform scale-100 active:scale-90">arrow_back</span>
+<h1 class="font-['Manrope'] text-lg font-bold text-[#e2e2e4] tracking-tight">Sleep Analysis</h1>
+</div>
+<div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high ring-2 ring-primary/20">
+<img alt="User profile avatar" data-alt="close-up portrait of a calm person with soft cinematic lighting against a dark moody blue background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJFdU3vIQtIf-RQ8izTLAS61EzKD-ym2giT8bMxFKyuZP2Oylj8Cq-zHXOZTKnCz-436yi8IfjWRBm-sf_pqj4hXWpQdMfrC82IWhmsD1ExyIaY77-HaZjERuG-nG4SN48hk5D1eZ66kyMUD_FbSQm4_YCPe2OeU78v-k5PE-5dwYNwofvD33crdZXG3hjxQRAwWCgyUOJc2TbdFvu4AUxBryTvpIOklzgh-tctt-6wlPm5s4fF9nOrDlybT9QXV9mFRcXo_a3v7Pf"/>
+</div>
+</header>
+<main class="pt-20 px-6 max-w-5xl mx-auto">
+<!-- Hero Section: Sleep Score -->
+<section class="mt-8 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+<div class="space-y-2">
+<p class="font-body text-on-surface-variant tracking-wide font-medium">LATEST ANALYSIS</p>
+<h2 class="font-headline text-5xl font-extrabold tracking-tighter text-on-surface">Sleep Quality <span class="text-primary italic">84</span><span class="text-xl text-on-surface-variant font-normal tracking-normal">/100</span></h2>
+</div>
+<!-- Insight Toast -->
+<div class="glass-card p-4 rounded-2xl flex items-center gap-4 border-l-4 border-tertiary shadow-xl">
+<div class="bg-tertiary-container/30 p-2 rounded-xl">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">insights</span>
+</div>
+<div>
+<p class="font-body text-sm font-semibold text-on-surface">Your sleep regularity improved by 12% this week.</p>
+</div>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Sleep Stages Chart (Main Focus) -->
+<div class="md:col-span-2 bg-surface-container-low p-8 rounded-[2rem] relative overflow-hidden flex flex-col justify-between min-h-[400px]">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-1">Hypnogram</h3>
+<p class="text-on-surface-variant text-sm">Sleep stage cycles through the night</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface-container-highest text-[10px] font-bold rounded-full text-on-surface-variant uppercase tracking-widest">Cycles: 5</span>
+</div>
+</div>
+<!-- Abstract Chart Visualization -->
+<div class="relative h-48 w-full flex items-end gap-1 px-2">
+<!-- Bars representing stages with varying heights and opacities -->
+<div class="flex-1 bg-primary/20 rounded-t-lg h-[20%]" title="Awake"></div>
+<div class="flex-1 bg-primary/40 rounded-t-lg h-[40%]" title="Light"></div>
+<div class="flex-1 bg-primary/60 rounded-t-lg h-[80%]" title="REM"></div>
+<div class="flex-1 bg-primary/90 rounded-t-lg h-[100%]" title="Deep"></div>
+<div class="flex-1 bg-primary/60 rounded-t-lg h-[80%]" title="REM"></div>
+<div class="flex-1 bg-primary/40 rounded-t-lg h-[40%]" title="Light"></div>
+<div class="flex-1 bg-primary/20 rounded-t-lg h-[20%]" title="Awake"></div>
+<div class="flex-1 bg-primary/40 rounded-t-lg h-[40%]" title="Light"></div>
+<div class="flex-1 bg-primary/90 rounded-t-lg h-[100%]" title="Deep"></div>
+<div class="flex-1 bg-primary/60 rounded-t-lg h-[80%]" title="REM"></div>
+<div class="flex-1 bg-primary/40 rounded-t-lg h-[40%]" title="Light"></div>
+<div class="flex-1 bg-primary/90 rounded-t-lg h-[95%]" title="Deep"></div>
+<div class="flex-1 bg-primary/60 rounded-t-lg h-[80%]" title="REM"></div>
+<div class="flex-1 bg-primary/40 rounded-t-lg h-[45%]" title="Light"></div>
+<div class="flex-1 bg-primary/20 rounded-t-lg h-[15%]" title="Awake"></div>
+</div>
+<!-- Legend -->
+<div class="grid grid-cols-4 gap-4 mt-8 pt-8 border-t border-outline-variant/10">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-bold text-primary/80 mb-1">Deep</span>
+<span class="font-headline font-bold text-lg">1h 42m</span>
+</div>
+<div class="flex flex-col border-l border-outline-variant/20 pl-4">
+<span class="text-[10px] uppercase font-bold text-primary/60 mb-1">REM</span>
+<span class="font-headline font-bold text-lg">2h 15m</span>
+</div>
+<div class="flex flex-col border-l border-outline-variant/20 pl-4">
+<span class="text-[10px] uppercase font-bold text-primary/40 mb-1">Light</span>
+<span class="font-headline font-bold text-lg">3h 50m</span>
+</div>
+<div class="flex flex-col border-l border-outline-variant/20 pl-4">
+<span class="text-[10px] uppercase font-bold text-primary/20 mb-1">Awake</span>
+<span class="font-headline font-bold text-lg">14m</span>
+</div>
+</div>
+</div>
+<!-- Sleep Metrics Column -->
+<div class="flex flex-col gap-6">
+<!-- HRV Card -->
+<div class="bg-surface-container-low p-6 rounded-[2rem] flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<h4 class="font-headline font-bold text-on-surface-variant text-sm">Heart Rate Variability</h4>
+<span class="material-symbols-outlined text-tertiary text-lg">ecg</span>
+</div>
+<div class="mt-4">
+<span class="text-3xl font-headline font-black text-on-surface">58 <span class="text-sm font-normal text-on-surface-variant">ms</span></span>
+<div class="mt-2 flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 w-fit px-2 py-0.5 rounded-full uppercase">
+<span class="material-symbols-outlined text-xs">trending_up</span> Good
+                        </div>
+</div>
+</div>
+<!-- Latency Card -->
+<div class="bg-surface-container-low p-6 rounded-[2rem] flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<h4 class="font-headline font-bold text-on-surface-variant text-sm">Sleep Latency</h4>
+<span class="material-symbols-outlined text-primary text-lg">timer</span>
+</div>
+<div class="mt-4">
+<span class="text-3xl font-headline font-black text-on-surface">12 <span class="text-sm font-normal text-on-surface-variant">min</span></span>
+<p class="text-[10px] text-on-surface-variant mt-1 uppercase tracking-widest">Time to fall asleep</p>
+</div>
+</div>
+<!-- Regularity Card -->
+<div class="bg-primary p-6 rounded-[2rem] flex flex-col justify-between text-on-primary shadow-2xl shadow-primary/10">
+<div class="flex justify-between items-start">
+<h4 class="font-headline font-bold text-on-primary/80 text-sm uppercase tracking-tighter">Consistency</h4>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star_rate</span>
+</div>
+<div class="mt-4">
+<span class="text-3xl font-headline font-black">94%</span>
+<p class="text-[10px] text-on-primary/80 mt-1 uppercase tracking-widest font-bold">Sleep Schedule</p>
+</div>
+</div>
+</div>
+<!-- Weekly Consistency Chart -->
+<div class="md:col-span-3 bg-surface-container-low p-8 rounded-[2rem]">
+<div class="flex justify-between items-center mb-10">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface">Weekly Consistency</h3>
+<p class="text-on-surface-variant text-sm">Comparison of bedtimes and wake times</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Sleep</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim"></div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Wake</span>
+</div>
+</div>
+</div>
+<div class="flex justify-between items-end h-40 gap-4">
+<!-- Day Bar Group -->
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full relative h-full flex flex-col justify-end">
+<div class="w-full bg-secondary-container/40 rounded-full h-[60%] mb-1 flex items-center justify-center">
+<div class="w-1.5 h-[80%] bg-primary-fixed-dim rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Mon</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full relative h-full flex flex-col justify-end">
+<div class="w-full bg-secondary-container/40 rounded-full h-[65%] mb-1 flex items-center justify-center">
+<div class="w-1.5 h-[75%] bg-primary-fixed-dim rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Tue</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full relative h-full flex flex-col justify-end">
+<div class="w-full bg-secondary-container/40 rounded-full h-[58%] mb-1 flex items-center justify-center">
+<div class="w-1.5 h-[85%] bg-primary-fixed-dim rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Wed</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full relative h-full flex flex-col justify-end">
+<div class="w-full bg-secondary-container rounded-full h-[62%] mb-1 flex items-center justify-center border border-primary/20">
+<div class="w-1.5 h-[80%] bg-primary-fixed-dim rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] font-bold text-primary uppercase">Thu</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full relative h-full flex flex-col justify-end">
+<div class="w-full bg-secondary-container/40 rounded-full h-[60%] mb-1 flex items-center justify-center">
+<div class="w-1.5 h-[78%] bg-primary-fixed-dim rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Fri</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full relative h-full flex flex-col justify-end">
+<div class="w-full bg-secondary-container/40 rounded-full h-[75%] mb-1 flex items-center justify-center">
+<div class="w-1.5 h-[70%] bg-primary-fixed-dim rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Sat</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full relative h-full flex flex-col justify-end">
+<div class="w-full bg-secondary-container/40 rounded-full h-[72%] mb-1 flex items-center justify-center">
+<div class="w-1.5 h-[72%] bg-primary-fixed-dim rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Sun</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full rounded-t-3xl z-50 pb-safe bg-[#111415]/90 backdrop-blur-2xl shadow-[0_-1px_20px_rgba(27,36,127,0.06)] shadow-xl">
+<div class="flex justify-around items-center h-20 w-full px-4">
+<div class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">Home</span>
+</div>
+<!-- Active Tab: Analysis -->
+<div class="flex flex-col items-center justify-center bg-[#1a237e]/40 text-[#bdc2ff] rounded-2xl px-5 py-2 scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">insights</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">Analysis</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1">event_note</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">Schedule</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#c6c5d4] px-5 py-2 hover:text-[#e2e2e4] transition-all scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase">Settings</span>
+</div>
+</div>
+</nav>
+</body></html>
