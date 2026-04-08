@@ -74,7 +74,7 @@ class FakePiBleDataSource : PiBleDataSource {
         delay(800)
         connectionState.value = connectionState.value.copy(
             status = ConnectionStatus.Connected,
-            details = "BLE 스텁 연결 완료",
+            details = "책상 디바이스 스텁 연결 완료",
             lastSeenAt = LocalDateTime.now(),
         )
     }
@@ -120,4 +120,3 @@ class FakePiBleDataSource : PiBleDataSource {
         )
     }
 }
-

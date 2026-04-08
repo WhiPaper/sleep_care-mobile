@@ -29,17 +29,17 @@
 
 ## 주요 폴더
 
-- [`app/src/main/java/com/sleepcare/mobile/navigation`](/mnt/c/Users/cksgm/.gemini/antigravity/scratch/sleep_care-mobile/app/src/main/java/com/sleepcare/mobile/navigation)
+- `app/src/main/java/com/sleepcare/mobile/navigation`
   앱 진입점과 전체 라우팅
-- [`app/src/main/java/com/sleepcare/mobile/ui`](/mnt/c/Users/cksgm/.gemini/antigravity/scratch/sleep_care-mobile/app/src/main/java/com/sleepcare/mobile/ui)
+- `app/src/main/java/com/sleepcare/mobile/ui`
   기능별 Compose 화면과 공통 컴포넌트
-- [`app/src/main/java/com/sleepcare/mobile/domain`](/mnt/c/Users/cksgm/.gemini/antigravity/scratch/sleep_care-mobile/app/src/main/java/com/sleepcare/mobile/domain)
+- `app/src/main/java/com/sleepcare/mobile/domain`
   도메인 모델, 저장소 인터페이스, 점수 계산 로직
-- [`app/src/main/java/com/sleepcare/mobile/data`](/mnt/c/Users/cksgm/.gemini/antigravity/scratch/sleep_care-mobile/app/src/main/java/com/sleepcare/mobile/data)
+- `app/src/main/java/com/sleepcare/mobile/data`
   Room/DataStore, fake 데이터 소스, 저장소 구현, 추천 엔진
-- [`docs`](/mnt/c/Users/cksgm/.gemini/antigravity/scratch/sleep_care-mobile/docs)
+- `docs`
   제품/아키텍처/데이터 기획 문서
-- [`stitch_exports/onboarding`](/mnt/c/Users/cksgm/.gemini/antigravity/scratch/sleep_care-mobile/stitch_exports/onboarding)
+- `stitch_exports/onboarding`
   Stitch 화면 HTML, 이미지, 디자인 시스템 산출물
 
 ## 구현된 화면
@@ -66,7 +66,7 @@
 현재 저장소의 `local.properties` 예시:
 
 ```properties
-sdk.dir=/mnt/c/Users/cksgm/AppData/Local/Android/Sdk
+sdk.dir=/path/to/Android/Sdk
 ```
 
 ### Gradle 확인

@@ -80,7 +80,7 @@ fun DeviceConnectionScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("연결 안내", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "실제 BLE/Health Connect 연동은 후속 단계에서 교체될 예정이며, 현재는 상태 흐름과 UI만 먼저 검증합니다.",
+                        "실제 워치 세션 연동과 라즈베리파이 연동은 후속 단계에서 교체될 예정이며, 현재는 상태 흐름과 UI만 먼저 검증합니다.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
