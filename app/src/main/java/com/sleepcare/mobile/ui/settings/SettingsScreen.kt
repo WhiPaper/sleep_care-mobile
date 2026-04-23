@@ -1,7 +1,12 @@
 package com.sleepcare.mobile.ui.settings
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.compose.foundation.layout.Arrangement
@@ -16,11 +21,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -38,10 +51,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+private const val HEALTH_CONNECT_PROVIDER_PACKAGE_NAME = "com.google.android.apps.healthdata"
+
 data class SettingsUiState(
     val preferences: NotificationPreferences = NotificationPreferences(),
     val lastSyncText: String = "Health Connect 수면 동기화 대기 중",
     val canRequestHealthConnectPermission: Boolean = false,
+    val healthConnectState: HealthConnectSleepState = HealthConnectSleepState.Checking,
 )
 
 @Composable
@@ -52,14 +68,30 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var healthConnectHelpText by rememberSaveable { mutableStateOf<String?>(null) }
     val healthConnectPermissions = setOf(
         HealthPermission.getReadPermission(SleepSessionRecord::class),
     )
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshSleepSync()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val permissionLauncher = rememberLauncherForActivityResult(
         PermissionController.createRequestPermissionResultContract(),
     ) { granted ->
         if (granted.containsAll(healthConnectPermissions)) {
+            healthConnectHelpText = null
             viewModel.refreshSleepSync()
+        } else {
+            healthConnectHelpText =
+                "권한 창이 뜨지 않거나 바로 닫히면 Health Connect 설정에서 이 앱 권한을 직접 허용해 주세요."
         }
     }
     LazyColumn(
@@ -117,12 +149,36 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (healthConnectHelpText != null) {
+                        Text(
+                            text = healthConnectHelpText!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     if (uiState.canRequestHealthConnectPermission) {
                         Button(
                             onClick = { permissionLauncher.launch(healthConnectPermissions) },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text("Health Connect 권한 요청")
+                        }
+                        Button(
+                            onClick = {
+                                openHealthConnectSettings(context)
+                                healthConnectHelpText =
+                                    "Health Connect 화면에서 Sleep Care 앱 권한을 열어 수면 읽기를 허용한 뒤 다시 돌아오면 상태를 재확인합니다."
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Health Connect에서 직접 권한 열기")
+                        }
+                    } else if (uiState.healthConnectState is HealthConnectSleepState.ProviderUpdateRequired) {
+                        Button(
+                            onClick = { openHealthConnectUpdate(context) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Health Connect 업데이트")
                         }
                     }
                 }
@@ -196,6 +252,7 @@ class SettingsViewModel @Inject constructor(
                 append(sleepState.toSettingsCopy(lastSync.sleepSyncedAt))
             },
             canRequestHealthConnectPermission = sleepState is HealthConnectSleepState.PermissionDenied,
+            healthConnectState = sleepState,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -224,4 +281,45 @@ private fun HealthConnectSleepState.toSettingsCopy(lastSyncedAt: java.time.Local
     HealthConnectSleepState.Unavailable -> " · Health Connect 사용 불가"
     HealthConnectSleepState.ProviderUpdateRequired -> " · Health Connect 업데이트 필요"
     is HealthConnectSleepState.Error -> " · Health Connect 오류"
+}
+
+private fun openHealthConnectSettings(context: Context) {
+    val intent = runCatching {
+        HealthConnectClient.getHealthConnectManageDataIntent(context, HEALTH_CONNECT_PROVIDER_PACKAGE_NAME)
+    }.getOrElse {
+        Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+    }.apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        openHealthConnectUpdate(context)
+    }
+}
+
+private fun openHealthConnectUpdate(context: Context) {
+    val marketIntent = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("market://details?id=$HEALTH_CONNECT_PROVIDER_PACKAGE_NAME&url=healthconnect%3A%2F%2Fonboarding")
+    ).apply {
+        setPackage("com.android.vending")
+        putExtra("overlay", true)
+        putExtra("callerId", context.packageName)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    val webIntent = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("https://play.google.com/store/apps/details?id=$HEALTH_CONNECT_PROVIDER_PACKAGE_NAME")
+    ).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    try {
+        context.startActivity(marketIntent)
+    } catch (_: ActivityNotFoundException) {
+        context.startActivity(webIntent)
+    }
 }
