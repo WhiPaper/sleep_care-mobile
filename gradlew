@@ -97,11 +97,6 @@ if [ -z "$ANDROID_USER_HOME" ] ; then
     export ANDROID_USER_HOME
 fi
 
-if [ -z "$ANDROID_SDK_HOME" ] ; then
-    ANDROID_SDK_HOME="$APP_HOME"
-    export ANDROID_SDK_HOME
-fi
-
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 

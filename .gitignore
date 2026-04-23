@@ -7,7 +7,12 @@
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
+/.idea/misc.xml
 /build
 /captures
 .DS_Store
 /app/build
+/watch/build
+/watch-contracts/build
+/watch-contracts/bin
+.kotlin/

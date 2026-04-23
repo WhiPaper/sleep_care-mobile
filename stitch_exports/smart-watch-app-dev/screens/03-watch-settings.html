@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nocturnal Science - Wear OS Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#2f3132",
+                    "on-tertiary-fixed-variant": "#004e59",
+                    "on-error-container": "#ffdad6",
+                    "on-surface": "#e2e2e4",
+                    "primary": "#bdc2ff",
+                    "outline": "#908f9d",
+                    "on-surface-variant": "#c6c5d4",
+                    "secondary-fixed-dim": "#bac3ff",
+                    "on-primary-container": "#8690ee",
+                    "on-secondary-fixed-variant": "#293ca0",
+                    "primary-container": "#1a237e",
+                    "secondary": "#bac3ff",
+                    "surface-container": "#1e2021",
+                    "on-error": "#690005",
+                    "on-background": "#e2e2e4",
+                    "primary-fixed-dim": "#bdc2ff",
+                    "surface-container-high": "#282a2c",
+                    "surface-container-highest": "#333537",
+                    "surface-bright": "#37393b",
+                    "error-container": "#93000a",
+                    "surface-container-low": "#1a1c1d",
+                    "surface-container-lowest": "#0c0e10",
+                    "inverse-primary": "#4c56af",
+                    "secondary-container": "#2c3ea3",
+                    "on-secondary-container": "#a8b4ff",
+                    "surface-tint": "#bdc2ff",
+                    "on-tertiary-container": "#00a6bc",
+                    "on-secondary": "#08218a",
+                    "on-primary-fixed": "#000767",
+                    "on-tertiary": "#00363e",
+                    "surface": "#111415",
+                    "outline-variant": "#454652",
+                    "surface-variant": "#333537",
+                    "on-primary-fixed-variant": "#343d96",
+                    "on-secondary-fixed": "#00105c",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed": "#001f25",
+                    "tertiary-fixed": "#a1efff",
+                    "tertiary": "#44d8f1",
+                    "background": "#111415",
+                    "primary-fixed": "#e0e0ff",
+                    "secondary-fixed": "#dee0ff",
+                    "tertiary-fixed-dim": "#44d8f1",
+                    "tertiary-container": "#00353d",
+                    "inverse-surface": "#e2e2e4",
+                    "on-primary": "#1b247f",
+                    "surface-dim": "#111415"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #000; /* Pure black for Wear OS battery saving */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        /* Watch Mockup */
+        .watch-face {
+            width: 384px;
+            height: 384px;
+            border-radius: 50%;
+            background-color: #111415;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 4px solid #1e2021;
+        }
+        .scroll-container {
+            flex: 1;
+            overflow-y: scroll;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 56px 24px 80px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            mask-image: radial-gradient(circle, black 60%, transparent 100%);
+        }
+        .scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="dark">
+<div class="watch-face">
+<!-- TopAppBar: Nocturnal Science -->
+<header class="flex flex-col items-center justify-center w-full px-6 w-full pt-4 pb-2 bg-transparent">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[#bdc2ff]" style="font-size: 14px;">nights_stay</span>
+<h1 class="text-[#bdc2ff] font-manrope font-bold text-[10px] uppercase tracking-widest">Nocturnal Science</h1>
+</div>
+</header>
+<main class="scroll-container">
+<!-- Permissions: Granted -->
+<div class="flex items-center justify-between bg-surface-container-low p-4 rounded-xl active:opacity-80 transition-opacity">
+<div class="flex flex-col">
+<span class="text-on-surface-variant font-manrope font-semibold text-xs">Permissions</span>
+<span class="text-tertiary font-inter text-[10px] font-medium">Granted</span>
+</div>
+<div class="bg-tertiary-container/30 p-1.5 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" style="font-size: 18px;">verified_user</span>
+</div>
+</div>
+<!-- Sleep Sync: Pending -->
+<div class="flex flex-col bg-surface-container-low p-4 rounded-xl gap-3">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-on-surface-variant font-manrope font-semibold text-xs">Sleep Log</span>
+<span class="text-error font-inter text-[10px] font-medium">Pending</span>
+</div>
+<span class="material-symbols-outlined text-error opacity-70" style="font-size: 18px;">history</span>
+</div>
+<button class="w-full bg-primary-container text-primary text-[10px] font-bold py-2 rounded-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 14px;">smartphone</span>
+                    Open on Phone
+                </button>
+</div>
+<!-- Sensor Info Row -->
+<div class="flex items-center justify-between bg-surface-container-low p-4 rounded-xl active:opacity-80 transition-opacity">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">target</span>
+</div>
+<span class="text-on-surface font-manrope font-semibold text-xs">Sensor Info</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 16px;">chevron_right</span>
+</div>
+<!-- Sync Status Row -->
+<div class="flex items-center justify-between bg-surface-container-low p-4 rounded-xl active:opacity-80 transition-opacity">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">sync</span>
+</div>
+<div class="flex flex-col">
+<span class="text-on-surface font-manrope font-semibold text-xs">Sync Status</span>
+<span class="text-on-surface-variant font-inter text-[9px]">Last: 2m ago</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 16px;">chevron_right</span>
+</div>
+<!-- Focus Mode (Extra item for scroll context) -->
+<div class="flex items-center justify-between bg-surface-container-low p-4 rounded-xl opacity-60">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">track_changes</span>
+</div>
+<span class="text-on-surface font-manrope font-semibold text-xs">Focus Mode</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Icons Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-center gap-4 px-4 py-2 bg-gradient-to-t from-[#111415] to-transparent">
+<div class="flex items-center justify-center text-[#c6c5d4] p-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">insights</span>
+</div>
+<div class="flex items-center justify-center text-[#c6c5d4] p-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">bedtime</span>
+</div>
+<!-- Active State for Settings -->
+<div class="flex items-center justify-center bg-[#1a237e] text-[#bdc2ff] rounded-full p-2 w-10 h-10 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</div>
+</nav>
+<!-- Ambient Background Glow (Atmospheric Blur) -->
+<div class="absolute inset-0 pointer-events-none z-[-1]">
+<div class="absolute bottom-0 right-0 w-32 h-32 bg-tertiary-container opacity-20 blur-[60px] rounded-full"></div>
+<div class="absolute top-0 left-0 w-32 h-32 bg-primary-container opacity-10 blur-[60px] rounded-full"></div>
+</div>
+</div>
+</body></html>

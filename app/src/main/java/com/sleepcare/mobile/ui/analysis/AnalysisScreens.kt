@@ -26,6 +26,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.sleepcare.mobile.data.repository.buildDrowsinessAnalysisSnapshot
 import com.sleepcare.mobile.data.repository.buildSleepAnalysisSnapshot
+import com.sleepcare.mobile.data.source.HealthConnectSleepDataSource
+import com.sleepcare.mobile.data.source.HealthConnectSleepState
 import com.sleepcare.mobile.domain.DrowsinessAnalysisSnapshot
 import com.sleepcare.mobile.domain.DrowsinessRepository
 import com.sleepcare.mobile.domain.SleepAnalysisSnapshot
@@ -50,7 +52,7 @@ data class AnalysisUiState(
     val sleep: SleepAnalysisSnapshot = SleepAnalysisSnapshot(0, 0, 0, 0, emptyList()),
     val drowsiness: DrowsinessAnalysisSnapshot = DrowsinessAnalysisSnapshot(0, "대기 중", 0, emptyList()),
     val sleepAvailable: Boolean = false,
-    val sleepEmptyReason: String = "워치 앱이 아직 준비되지 않아 실제 수면 기록을 불러올 수 없습니다.",
+    val sleepEmptyReason: String = "Health Connect 수면 상태를 확인하는 중입니다.",
 )
 
 @Composable
@@ -100,7 +102,7 @@ fun AnalysisHubScreen(
                 message = if (uiState.sleepAvailable) {
                     "최근 수면 시간이 조금 짧고 오후 2시대 졸음이 반복됩니다. 취침 시각을 앞당기면 개선 가능성이 큽니다."
                 } else {
-                    "워치 앱이 아직 준비되지 않아 수면 분석은 비어 있습니다. 지금은 졸음 이벤트만 확인할 수 있습니다."
+                    uiState.sleepEmptyReason
                 },
             )
         }
@@ -132,14 +134,14 @@ fun SleepAnalysisDetailScreen(
             } else {
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("실제 수면 연동 준비 중", style = MaterialTheme.typography.titleLarge)
+                        Text("Health Connect 수면 연동 상태", style = MaterialTheme.typography.titleLarge)
                         Text(
                             uiState.sleepEmptyReason,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            "워치 앱이 연결되면 수면 길이, 규칙성, 잠들기 지연을 여기에 채워 넣습니다.",
+                            "Health Connect 권한과 수면 기록이 들어오면 수면 길이, 규칙성, 잠들기 지연을 여기에 채워 넣습니다.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -166,7 +168,7 @@ fun SleepAnalysisDetailScreen(
                 }
             } else {
                 SleepUnavailableCallout(
-                    message = "워치 앱이 아직 준비되지 않아 주간 수면 그래프는 비어 있습니다.",
+                    message = uiState.sleepEmptyReason,
                     actionLabel = "추천 스케줄 보기",
                     onActionClick = onOpenSchedule,
                 )
@@ -183,7 +185,7 @@ fun SleepAnalysisDetailScreen(
             } else {
                 InsightCallout(
                     title = "수면 루틴은 지금 비어 있습니다",
-                    message = "워치 앱이 준비되면 수면 지연과 규칙성을 반영한 루틴 제안을 다시 보여드릴게요.",
+                    message = "Health Connect 수면 연동이 붙으면 수면 지연과 규칙성을 반영한 루틴 제안을 다시 보여드릴게요.",
                     actionLabel = "추천 스케줄 보기",
                     onActionClick = onOpenSchedule,
                 )
@@ -251,12 +253,14 @@ class AnalysisViewModel @Inject constructor(
     sleepRepository: SleepRepository,
     drowsinessRepository: DrowsinessRepository,
     studySessionRepository: StudySessionRepository,
+    private val sleepDataSource: HealthConnectSleepDataSource,
 ) : ViewModel() {
     val uiState = combine(
         sleepRepository.observeSleepSessions(),
         drowsinessRepository.observeDrowsinessEvents(),
         studySessionRepository.observeSessionState(),
-    ) { sleeps, drowsiness, sessionState ->
+        sleepDataSource.state,
+    ) { sleeps, drowsiness, sessionState, sleepState ->
         val sleepAvailable = sleeps.isNotEmpty()
         AnalysisUiState(
             sleep = if (sleepAvailable) {
@@ -266,11 +270,7 @@ class AnalysisViewModel @Inject constructor(
             },
             drowsiness = buildDrowsinessAnalysisSnapshot(drowsiness, sleeps, sessionState.latestRisk),
             sleepAvailable = sleepAvailable,
-            sleepEmptyReason = if (sleepAvailable) {
-                "최근 수면 데이터를 불러왔습니다."
-            } else {
-                "워치 앱이 아직 준비되지 않아 실제 수면 기록을 불러올 수 없습니다."
-            },
+            sleepEmptyReason = sleepState.toAnalysisCopy(sleepAvailable),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -286,10 +286,20 @@ private fun SleepUnavailableCallout(
     onActionClick: (() -> Unit)? = null,
 ) {
     InsightCallout(
-        title = "실제 수면 연동 준비 중",
+        title = "Health Connect 수면 연동 상태",
         message = message,
         icon = Icons.Filled.Bedtime,
         actionLabel = actionLabel ?: if (onActionClick != null) "수면 분석 보기" else null,
         onActionClick = onActionClick,
     )
+}
+
+private fun HealthConnectSleepState.toAnalysisCopy(sleepAvailable: Boolean): String = when {
+    sleepAvailable -> "최근 Health Connect 수면 데이터를 불러왔습니다."
+    this is HealthConnectSleepState.PermissionDenied -> "Health Connect 수면 권한이 없어 최근 수면 기록을 읽지 못했습니다."
+    this is HealthConnectSleepState.Unavailable -> "Health Connect가 이 기기에서 아직 사용할 수 없습니다."
+    this is HealthConnectSleepState.ProviderUpdateRequired -> "Health Connect 제공자 업데이트가 필요합니다."
+    this is HealthConnectSleepState.NoData -> "Health Connect 권한은 있지만 읽을 수면 데이터가 아직 없습니다."
+    this is HealthConnectSleepState.Error -> "Health Connect 수면 동기화 중 오류가 발생했습니다."
+    else -> "Health Connect 수면 상태를 확인하는 중입니다."
 }

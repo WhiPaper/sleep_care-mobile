@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nocturnal Science Alert</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#2f3132",
+                    "on-tertiary-fixed-variant": "#004e59",
+                    "on-error-container": "#ffdad6",
+                    "on-surface": "#e2e2e4",
+                    "primary": "#bdc2ff",
+                    "outline": "#908f9d",
+                    "on-surface-variant": "#c6c5d4",
+                    "secondary-fixed-dim": "#bac3ff",
+                    "on-primary-container": "#8690ee",
+                    "on-secondary-fixed-variant": "#293ca0",
+                    "primary-container": "#1a237e",
+                    "secondary": "#bac3ff",
+                    "surface-container": "#1e2021",
+                    "on-error": "#690005",
+                    "on-background": "#e2e2e4",
+                    "primary-fixed-dim": "#bdc2ff",
+                    "surface-container-high": "#282a2c",
+                    "surface-container-highest": "#333537",
+                    "surface-bright": "#37393b",
+                    "error-container": "#93000a",
+                    "surface-container-low": "#1a1c1d",
+                    "surface-container-lowest": "#0c0e10",
+                    "inverse-primary": "#4c56af",
+                    "secondary-container": "#2c3ea3",
+                    "on-secondary-container": "#a8b4ff",
+                    "surface-tint": "#bdc2ff",
+                    "on-tertiary-container": "#00a6bc",
+                    "on-secondary": "#08218a",
+                    "on-primary-fixed": "#000767",
+                    "on-tertiary": "#00363e",
+                    "surface": "#111415",
+                    "outline-variant": "#454652",
+                    "surface-variant": "#333537",
+                    "on-primary-fixed-variant": "#343d96",
+                    "on-secondary-fixed": "#00105c",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed": "#001f25",
+                    "tertiary-fixed": "#a1efff",
+                    "tertiary": "#44d8f1",
+                    "background": "#111415",
+                    "primary-fixed": "#e0e0ff",
+                    "secondary-fixed": "#dee0ff",
+                    "tertiary-fixed-dim": "#44d8f1",
+                    "tertiary-container": "#00353d",
+                    "inverse-surface": "#e2e2e4",
+                    "on-primary": "#1b247f",
+                    "surface-dim": "#111415"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .wear-os-mask {
+            clip-path: circle(50% at 50% 50%);
+        }
+        .soft-glow-pulsing {
+            box-shadow: 0 0 40px rgba(189, 194, 255, 0.15);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-black flex items-center justify-center min-h-screen font-body text-on-surface antialiased">
+<!-- Wear OS Simulated Circular Container -->
+<div class="relative w-[384px] h-[384px] bg-surface wear-os-mask flex flex-col items-center justify-between overflow-hidden shadow-2xl">
+<!-- Background Atmospheric Glow -->
+<div class="absolute inset-0 z-0">
+<div class="absolute top-[-20%] left-[-20%] w-[100%] h-[100%] bg-primary-container opacity-20 rounded-full blur-[80px]"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-error-container opacity-20 rounded-full blur-[60px]"></div>
+</div>
+<!-- Top Header (From Shared JSON Logic) -->
+<header class="z-10 w-full pt-8 pb-2 flex flex-col items-center justify-center px-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#bdc2ff] text-base" data-icon="nights_stay">nights_stay</span>
+<h1 class="font-headline text-[11px] font-bold tracking-widest text-[#bdc2ff] uppercase">Nocturnal Science</h1>
+</div>
+</header>
+<!-- Main Alert Content (The Canvas) -->
+<main class="z-10 flex flex-col items-center justify-center flex-1 w-full px-8 text-center">
+<!-- Pulsing Warning Icon Container -->
+<div class="relative mb-4">
+<!-- Multi-layered glassmorphism rings for pulsing effect -->
+<div class="absolute inset-0 bg-primary/20 rounded-full scale-150 blur-xl opacity-30 animate-pulse"></div>
+<div class="relative w-20 h-20 flex items-center justify-center bg-gradient-to-br from-primary-container to-surface-container-high rounded-full border border-outline-variant/20 soft-glow-pulsing">
+<span class="material-symbols-outlined text-primary text-5xl" data-icon="visibility" style="font-variation-settings: 'FILL' 1;">visibility</span>
+</div>
+</div>
+<!-- Warning Text -->
+<div class="space-y-1">
+<h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface">Drowsiness Risk</h2>
+<p class="font-body text-xs text-on-surface-variant max-w-[180px] mx-auto leading-relaxed">Critical fatigue levels detected. Please take a break.</p>
+</div>
+<!-- Asymmetric Data Point -->
+<div class="mt-4 flex items-center gap-2 bg-surface-container-low px-3 py-1 rounded-full border border-outline-variant/10">
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="bolt">bolt</span>
+<span class="font-label text-[10px] font-semibold text-on-tertiary-container tracking-wide">94% VIGILANCE DROP</span>
+</div>
+</main>
+<!-- Fixed Bottom Action (Dismiss Button) -->
+<footer class="z-10 w-full pb-10 px-10 flex justify-center">
+<button class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold text-sm rounded-xl shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-base" data-icon="close">close</span>
+                Dismiss
+            </button>
+</footer>
+<!-- Decorative Side Indicator (Scientific Precision) -->
+<div class="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-40">
+<div class="h-1 w-3 bg-primary rounded-full"></div>
+<div class="h-1 w-1 bg-outline rounded-full"></div>
+<div class="h-1 w-1 bg-outline rounded-full"></div>
+<div class="h-1 w-1 bg-outline rounded-full"></div>
+</div>
+</div>
+<!-- Overlay Grain Texture (Subtle Scientific Feel) -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[100]" data-alt="subtle dark technical grain texture for medical and scientific digital interfaces" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnI5HDfV0kQCIgCgzHJzHB0iZQamxQ9_Up4YBguSzlD-0QtGNqDYE3MQeZ3Yxa6YViG8P5qknwAEMIfIqNJEuKz9orwe2H6D0DM5BscSlUQmPykBImbB_k43EcvjP6enxgbWXiQcDVFznFTFjr4nXbRKLGhziImMDLzuKCj9Ni7HIOMWXaCENmt3jrW_WJUaGVck35Kre7UZhLXJvGtz_vE9rJxvR-aBIzmksjxssSGLqZzpM45U5YxYTawjDYmwLEVr1ouUCdyW8')"></div>
+</body></html>

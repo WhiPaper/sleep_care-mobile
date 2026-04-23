@@ -16,6 +16,7 @@ import com.sleepcare.mobile.domain.PiNetworkDataSource
 import com.sleepcare.mobile.domain.PiRiskUpdate
 import com.sleepcare.mobile.domain.PiServiceEndpoint
 import com.sleepcare.mobile.domain.PiSessionSummary
+import com.sleepcare.mobile.domain.WatchHeartRateSample
 import com.sleepcare.mobile.domain.WatchSleepDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.KeyStore
@@ -148,6 +149,24 @@ object PiProtocolCodec {
 private fun Long.toLocalDateTime(): LocalDateTime =
     LocalDateTime.ofInstant(Instant.ofEpochMilli(this), ZoneId.systemDefault())
 
+private fun LocalDateTime.toEpochMillis(): Long =
+    atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+private fun List<Int>.toJsonArray() = org.json.JSONArray().apply {
+    forEach { put(it) }
+}
+
+private fun WatchHeartRateSample.toHrQuality(): String {
+    val ibiStatusValue = ibiStatus.firstOrNull() ?: -999
+    return when {
+        hrStatus == 1 && ibiStatusValue == 0 -> "ok"
+        hrStatus in setOf(-2, -8, -10) -> "motion_or_weak"
+        hrStatus == -3 -> "detached"
+        hrStatus in setOf(0, -999) -> "busy_or_initial"
+        else -> "motion_or_weak"
+    }
+}
+
 @Singleton
 class PiNetworkDataSourceImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -200,7 +219,11 @@ class PiNetworkDataSourceImpl @Inject constructor(
         connectWebSocket(discovered)
     }
 
-    override suspend fun startSession(sessionId: String): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun startSession(
+        sessionId: String,
+        watchAvailable: Boolean,
+        eyeOnly: Boolean,
+    ): Boolean = withContext(Dispatchers.IO) {
         if (!discoverAndConnect()) return@withContext false
 
         val waiter = CompletableDeferred<Boolean>()
@@ -214,8 +237,8 @@ class PiNetworkDataSourceImpl @Inject constructor(
                 ackRequired = true,
                 body = JSONObject()
                     .put("study_mode", "focus")
-                    .put("watch_available", false)
-                    .put("eye_only", true),
+                    .put("watch_available", watchAvailable)
+                    .put("eye_only", eyeOnly),
             )
         )
         if (!sent) {
@@ -226,6 +249,34 @@ class PiNetworkDataSourceImpl @Inject constructor(
         val opened = withTimeoutOrNull(6_000) { waiter.await() } ?: false
         openWaiters.remove(sessionId)
         opened
+    }
+
+    override suspend fun sendHeartRateSamples(samples: List<WatchHeartRateSample>): Set<Long> = withContext(Dispatchers.IO) {
+        if (samples.isEmpty()) return@withContext emptySet()
+        val deliveredSampleSeqs = mutableSetOf<Long>()
+        samples.sortedBy { it.sampleSeq }.forEach { sample ->
+            val sent = sendEnvelope(
+                PiProtocolCodec.buildEnvelope(
+                    type = "hr.ingest",
+                    sequence = sequence.getAndIncrement(),
+                    source = "phone",
+                    sessionId = sample.sessionId,
+                    ackRequired = false,
+                    body = JSONObject()
+                        .put("sample_seq", sample.sampleSeq)
+                        .put("watch_sensor_ts_ms", sample.sensorTimestampMs)
+                        .put("phone_rx_ms", sample.receivedAt.toEpochMillis())
+                        .put("bpm", sample.bpm)
+                        .put("hr_quality", sample.toHrQuality())
+                        .put("hr_status", sample.hrStatus)
+                        .put("ibi_ms", sample.ibiMs.toJsonArray()),
+                )
+            )
+            if (sent) {
+                deliveredSampleSeqs += sample.sampleSeq
+            }
+        }
+        deliveredSampleSeqs
     }
 
     override suspend fun stopSession(sessionId: String): PiSessionSummary? = withContext(Dispatchers.IO) {
@@ -306,8 +357,8 @@ class PiNetworkDataSourceImpl @Inject constructor(
                         ackRequired = true,
                         body = JSONObject()
                             .put("role", "android-app")
-                            .put("watch_available", false)
-                            .put("supports_eye_only", true),
+                            .put("watch_available", true)
+                            .put("supports_eye_only", false),
                     )
                 )
             }

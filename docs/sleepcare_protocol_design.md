@@ -5,13 +5,31 @@
 이 문서는 지금까지 논의한 내용을 바탕으로, **갤럭시 워치 기반 심박수 데이터**와 **라즈베리파이 카메라 기반 안구 데이터**를 이용한 졸음 감지 시스템의 **최종 연결 구조**, **졸음 판단 주체**, **실제 통신 프로토콜**, **메시지 흐름도**, **상태 머신**을 구현 가능한 수준으로 정리한 문서이다.
 장기 수면 분석과 추천 정책은 `plan.md` 및 `plan-data-and-recommendation.md`를 기준으로 본다.
 
+## 1.1 현재 앱 구현 기준
+
+현재 Android 앱에 반영된 범위는 아래와 같다.
+
+- 모바일 앱 ↔ 라즈베리파이: 구현됨
+  - 로컬 네트워크 `NSD + WSS`
+  - `hello`, `hello_ack`, `session.open`, `session.ack`, `risk.update`, `alert.fire`, `session.close`, `session.summary`, `ping/pong`
+- 워치 앱 ↔ 모바일 앱: 모바일 쪽 구조 반영 중
+  - 1차 대상은 `Galaxy Watch + Samsung Health Sensor SDK`
+  - Wear OS Data Layer 기반 메시지 송수신, ACK 커서, 백필 요청, `session.ready / error / closed`, `hr.ingest` 중계 구조를 모바일 앱에 반영했다
+  - 워치 앱은 companion 스캐폴드와 foreground tracking service를 구현했고, 실제 Samsung 센서 백엔드는 AAR 연결 단계가 남아 있다
+- 현재 세션 모드: 모바일 앱 기준 `watch + eye` handshake 구조 반영
+- 수면 데이터 연동: 모바일 앱에서 Health Connect 기반으로 구현
+
+따라서 이 문서는 장기 목표 구조를 유지하되, 실제 앱 구현은 **폰 ↔ 파이 실연동 + 워치 companion 스캐폴드 + Health Connect 수면 연동**까지 진행된 상태로 본다.
+
 ---
 
 ## 2. 최종 결론
 
 ### 2.1 권장 연결 구조
 
-**스마트워치 → 스마트폰 → 라즈베리파이** 구조를 채택한다.
+장기 목표 구조는 **스마트워치 → 스마트폰 → 라즈베리파이** 이다.
+
+현재 구현은 워치 없는 **스마트폰 → 라즈베리파이** `eye-only` 구조다.
 
 - **워치 ↔ 폰**: Wear OS Data Layer 기반 통신
 - **폰 ↔ 라즈베리파이**: 로컬 네트워크 기반 서비스 발견 + WebSocket 통신
@@ -69,8 +87,9 @@
 #### 역할
 - 공부 시작 / 종료 제어
 - 세션 ID 생성 및 관리
-- 워치와의 연결 관리
-- 심박 데이터 수신 및 라즈베리파이로 중계
+- 라즈베리파이와의 연결 관리
+- 현재 구현에서는 Pi 위험도/알림 수신 및 로컬 저장
+- 향후 워치 심박 데이터 수신 및 라즈베리파이 중계
 - 사용자 설정, 기록, UI 표시
 - 경고 로그 저장
 
@@ -81,8 +100,9 @@
 
 #### 역할
 - 카메라 기반 눈 감김 판별
-- 심박 데이터 수신
-- 안구 + 심박 데이터 융합
+- 현재 구현에서는 eye-only 기반 위험도 계산
+- 향후 심박 데이터 수신
+- 향후 안구 + 심박 데이터 융합
 - 최종 위험도 계산
 - 경고 출력(부저/스피커/LED/화면)
 
@@ -212,6 +232,9 @@ flowchart LR
 /sc/v1/ctl/start
 /sc/v1/ctl/stop
 /sc/v1/ctl/flush_policy
+/sc/v1/session/ready
+/sc/v1/session/error
+/sc/v1/session/closed
 /sc/v1/hr/live
 /sc/v1/hr/batch
 /sc/v1/hr/ack
@@ -252,6 +275,13 @@ ack
 ping
 pong
 ```
+
+### 11.1 현재 앱 구현 범위
+
+- 구현됨: `hello`, `hello_ack`, `session.open`, `session.ack`, `risk.update`, `alert.fire`, `session.close`, `session.summary`, `ping`, `pong`
+- 모바일 앱 구현됨: `hr.ingest`, 워치 ACK 커서, 백필 요청, 워치 진동 요청, `session.ready / error / close`
+- 미구현: `alert.clear`, 일반 `ack`, Samsung Health Sensor SDK 실센서 backend
+- 모바일 앱은 워치 세션을 전제로 동작하며, `session.open` 과 `hello` 에서 `watch_available=true`, `eye_only=false` 를 사용한다.
 
 ---
 
@@ -507,6 +537,8 @@ device_id=deskpi-a1
 
 ## 15. 실제 메시지 흐름도
 
+모바일 앱은 현재 `15.1`의 워치 경로를 반영했고, 워치 앱도 companion 스캐폴드 기준의 `session.ready / error / close` 응답 경로를 포함한다. 다만 실제 센서 수집은 Samsung Health Sensor SDK AAR 연결 이후 실기기 검증이 필요하다.
+
 ### 15.1 정상 시나리오
 
 ```mermaid
@@ -611,6 +643,10 @@ stateDiagram-v2
     RESYNC_WATCH --> RUNNING: backfill_done
     STOPPING --> IDLE: watch_closed && pi_closed
 ```
+
+#### 현재 앱 구현에서의 단순화
+- 모바일 앱은 `ARM_WATCH`, 심박 ACK 커서, 백필 요청을 먼저 반영한다.
+- 워치 측 `WAIT_READY`, `ERROR_WATCH`, `watch_closed` 세부 payload와 retry 정책은 계속 논의 대상으로 둔다.
 
 ### 16.2 스마트워치 상태 머신
 
@@ -759,16 +795,17 @@ stateDiagram-v2
 
 #### 폰
 - 세션 시작/종료 UI
-- 워치 연결 및 ACK 처리
 - NSD 기반 파이 발견
 - WSS 클라이언트
-- 파이 중계 및 로그 저장
+- 파이 위험도/알림 수신 및 로그 저장
+- `eye-only` 세션 흐름 지원
 
 #### 라즈베리파이
 - 카메라 기반 눈 감김 점수 산출
 - WebSocket 서버
-- 심박 입력 수신
-- eye + hr 융합 로직
+- eye-only 기반 위험도 전송
+- 향후 심박 입력 수신
+- 향후 eye + hr 융합 로직
 - 부저/LED/스피커 경고
 
 ### 20.2 v2 확장 포인트
@@ -782,4 +819,4 @@ stateDiagram-v2
 
 ## 21. 최종 한 줄 요약
 
-**이 프로젝트의 최적 구조는 `스마트워치 → 스마트폰 → 라즈베리파이` 이며, 최종 졸음 판단은 라즈베리파이가 담당한다. 안구 데이터는 주 신호, 심박수 데이터는 보조 신호로 사용하며, 워치-폰은 Wear OS Data Layer, 폰-파이는 NSD + WSS 기반으로 연결한다.**
+**장기 목표 구조는 `스마트워치 → 스마트폰 → 라즈베리파이` 이며, 현재 구현은 `스마트폰 ↔ 라즈베리파이` 실연동 위에 `Galaxy Watch` companion 스캐폴드와 `Health Connect` 수면 연동을 올린 상태다. 최종 졸음 판단은 라즈베리파이가 담당하고, 폰-파이는 `NSD + WSS` 기반으로 연결한다.**

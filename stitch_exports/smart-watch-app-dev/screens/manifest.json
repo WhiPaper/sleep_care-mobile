@@ -1,0 +1,69 @@
+{
+  "project": {
+    "title": "스마트 워치 앱 개발",
+    "id": "3884119377295494772"
+  },
+  "screens": [
+    {
+      "order": 1,
+      "title": "Alerting",
+      "id": "04ce710afc92417c81957191256e32aa",
+      "width": 780,
+      "height": 1768,
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/ADBb0uhMWXhtoV7JuqD8_PVRD02nj4lpebhewq8RfRCkYFqz5hAwlj4tZjavORDTEG2HmnCz-pIBAV5DPI5jRQf_8zzpGcB3KfNb3WvNbMF_QoM4El3fQTa-3EdaFqGYTgOKqEfnSJbCUe4uiJjsQ7xSIg9t2wm1bUkMTua-r6m9UzV4NWpwftLrYy78U7LSFPWUZtQB_vsFd2LlYUt5ez9XZyIVVtZV4GhU3kv1c7v7nmb5_f9bCpbfZjYNYQ",
+      "html_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzQ4Y2YxYzg5MjI0MjRkYzBiYTBmMzVjZDIyMmIwMjdmEgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086",
+      "files": {
+        "png": "screens/01-alerting.png",
+        "html": "screens/01-alerting.html"
+      }
+    },
+    {
+      "order": 2,
+      "title": "Connection Waiting",
+      "id": "83b253c0ef214ab690cb0d07b735f17d",
+      "width": 780,
+      "height": 1768,
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/ADBb0ugaVv325qZTY95sA00AFcHjxCkWLXQiIUPBU5oSalmwyazT71XyxqrEJlwReHjL8h0W1gT1Fwgvgi536qhGhioacvJg6YqM4Zd27bV1cNDdUJsmkj_E8HmcaL876EeA9sL0QORk-wHY8eFduEjBSkyP6GFiM58VSBibUFMN9p1pH_tG-CuWf2bzkWUiwXdcvpebmpq_uVDKGj5J1KXgrNxLhPIVgIylLag1G7bICrrtQpObz9G24H7k6yQ",
+      "html_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzZmNTE4ZGYyZWIyMzQ1MDQ4YjllYWQ1NjdjMWM3NGMwEgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086",
+      "files": {
+        "png": "screens/02-connection-waiting.png",
+        "html": "screens/02-connection-waiting.html"
+      }
+    },
+    {
+      "order": 3,
+      "title": "Watch Settings",
+      "id": "435b2304f95c4b9cb071eb56e03aba38",
+      "width": 780,
+      "height": 1768,
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/ADBb0uh6GYS8O1qYzhZ-L3HqnmQB4hNrRi_kUc9BdZry0qRocWCJWisG86eKmSD3VNgFTGH7goYimfd8ba_wd6lgNDw-ugOtcmk4YPLtfYxc5psiieELxVRnZ7nIp1CzewB7b8vuToeU8ZwoIEDrTSdZZ4e7lW6bEitZtI2pHrZzht2soKRsQmPvmlpw5N9hxqsNF9uqXf1UgkFGwsdTG45MY3hwKJiIoobt1afXx69soqLSmJiPrfZEX11M0xg",
+      "html_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzZmOTczMzY4ZjEwZTRiODdhMjM4NjA2NDRjN2M2MzJiEgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086",
+      "files": {
+        "png": "screens/03-watch-settings.png",
+        "html": "screens/03-watch-settings.html"
+      }
+    },
+    {
+      "order": 4,
+      "title": "Active Session",
+      "id": "97f63c483c284a6f9a50212311301659",
+      "width": 780,
+      "height": 1768,
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/ADBb0uiGqZu1etGED2RC8QpyKtyleBb1PURNeVYTU5B7ZEOrIJW7ZpsY94wx4bqMAEdKNr352Bol0rgCAkkdjdEhFcy8Of2HwsJ77QXYfrSy5iYqVCWicnqNfql66Pb2a-CwSXuHxSUGx7ur1W6Kxczv95P6rvJpBZEBG4Za1x8lXErsQd6Z7OjovvysvovCA7jGYY3PhWvfNL9BOur1CKpT_cYZwfXzBxS-aFp_zojf5wBP5VdQ6Wrd2u9Ta3k",
+      "html_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzhkMzA1MmVkNGZhNTRhYzFiY2RjNTUxNDhlNjQ2NWI2EgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086",
+      "files": {
+        "png": "screens/04-active-session.png",
+        "html": "screens/04-active-session.html"
+      }
+    }
+  ],
+  "design_system": {
+    "title": "Nocturne Scholar",
+    "instance_id": "asset-stub-assets-11449933967684563605-1776090178901",
+    "asset_id": "assets/11449933967684563605",
+    "files": {
+      "markdown": "design-system/nocturne-scholar.md",
+      "theme": "design-system/theme.json"
+    }
+  }
+}

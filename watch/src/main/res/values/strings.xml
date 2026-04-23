@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">SleepCare Watch</string>
+    <string name="watch_tracking_title">SleepCare Watch Tracking</string>
+    <string name="watch_tracking_channel_name">Watch Tracking</string>
+</resources>

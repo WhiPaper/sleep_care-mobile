@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCREENS_DIR="$ROOT_DIR/screens"
+
+mkdir -p "$SCREENS_DIR"
+
+curl -L "https://lh3.googleusercontent.com/aida/ADBb0uhMWXhtoV7JuqD8_PVRD02nj4lpebhewq8RfRCkYFqz5hAwlj4tZjavORDTEG2HmnCz-pIBAV5DPI5jRQf_8zzpGcB3KfNb3WvNbMF_QoM4El3fQTa-3EdaFqGYTgOKqEfnSJbCUe4uiJjsQ7xSIg9t2wm1bUkMTua-r6m9UzV4NWpwftLrYy78U7LSFPWUZtQB_vsFd2LlYUt5ez9XZyIVVtZV4GhU3kv1c7v7nmb5_f9bCpbfZjYNYQ" -o "$SCREENS_DIR/01-alerting.png"
+curl -L "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzQ4Y2YxYzg5MjI0MjRkYzBiYTBmMzVjZDIyMmIwMjdmEgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086" -o "$SCREENS_DIR/01-alerting.html"
+
+curl -L "https://lh3.googleusercontent.com/aida/ADBb0ugaVv325qZTY95sA00AFcHjxCkWLXQiIUPBU5oSalmwyazT71XyxqrEJlwReHjL8h0W1gT1Fwgvgi536qhGhioacvJg6YqM4Zd27bV1cNDdUJsmkj_E8HmcaL876EeA9sL0QORk-wHY8eFduEjBSkyP6GFiM58VSBibUFMN9p1pH_tG-CuWf2bzkWUiwXdcvpebmpq_uVDKGj5J1KXgrNxLhPIVgIylLag1G7bICrrtQpObz9G24H7k6yQ" -o "$SCREENS_DIR/02-connection-waiting.png"
+curl -L "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzZmNTE4ZGYyZWIyMzQ1MDQ4YjllYWQ1NjdjMWM3NGMwEgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086" -o "$SCREENS_DIR/02-connection-waiting.html"
+
+curl -L "https://lh3.googleusercontent.com/aida/ADBb0uh6GYS8O1qYzhZ-L3HqnmQB4hNrRi_kUc9BdZry0qRocWCJWisG86eKmSD3VNgFTGH7goYimfd8ba_wd6lgNDw-ugOtcmk4YPLtfYxc5psiieELxVRnZ7nIp1CzewB7b8vuToeU8ZwoIEDrTSdZZ4e7lW6bEitZtI2pHrZzht2soKRsQmPvmlpw5N9hxqsNF9uqXf1UgkFGwsdTG45MY3hwKJiIoobt1afXx69soqLSmJiPrfZEX11M0xg" -o "$SCREENS_DIR/03-watch-settings.png"
+curl -L "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzZmOTczMzY4ZjEwZTRiODdhMjM4NjA2NDRjN2M2MzJiEgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086" -o "$SCREENS_DIR/03-watch-settings.html"
+
+curl -L "https://lh3.googleusercontent.com/aida/ADBb0uiGqZu1etGED2RC8QpyKtyleBb1PURNeVYTU5B7ZEOrIJW7ZpsY94wx4bqMAEdKNr352Bol0rgCAkkdjdEhFcy8Of2HwsJ77QXYfrSy5iYqVCWicnqNfql66Pb2a-CwSXuHxSUGx7ur1W6Kxczv95P6rvJpBZEBG4Za1x8lXErsQd6Z7OjovvysvovCA7jGYY3PhWvfNL9BOur1CKpT_cYZwfXzBxS-aFp_zojf5wBP5VdQ6Wrd2u9Ta3k" -o "$SCREENS_DIR/04-active-session.png"
+curl -L "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzhkMzA1MmVkNGZhNTRhYzFiY2RjNTUxNDhlNjQ2NWI2EgsSBxC77_S8xwUYAZIBIwoKcHJvamVjdF9pZBIVQhMzODg0MTE5Mzc3Mjk1NDk0Nzcy&filename=&opi=89354086" -o "$SCREENS_DIR/04-active-session.html"

@@ -36,7 +36,6 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 @rem Keep Gradle state inside the project when no user-level home is available.
 if not defined GRADLE_USER_HOME set GRADLE_USER_HOME=%APP_HOME%\.gradle-user-home
 if not defined ANDROID_USER_HOME set ANDROID_USER_HOME=%APP_HOME%\.android
-if not defined ANDROID_SDK_HOME set ANDROID_SDK_HOME=%APP_HOME%
 
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS=-Dfile.encoding=UTF-8 "-Xmx64m" "-Xms64m"

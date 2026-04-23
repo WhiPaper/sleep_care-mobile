@@ -57,14 +57,14 @@ data class HomeUiState(
     val timelineSegments: List<TimelineSegment> = emptyList(),
     val studySession: StudySessionUiState = StudySessionUiState(),
     val sleepAvailable: Boolean = false,
-    val sleepEmptyReason: String = "워치 앱이 아직 준비되지 않아 실제 수면 기록을 불러올 수 없습니다.",
+    val sleepEmptyReason: String = "워치 수면 동기화가 아직 비어 있습니다. 워치 앱 구현과 함께 연동됩니다.",
 )
 
 data class StudySessionUiState(
     val isRunning: Boolean = false,
     val isBusy: Boolean = false,
     val startedAt: LocalDateTime? = null,
-    val message: String = "워치 앱이 없어도 Pi 기반 공부 세션은 바로 시작할 수 있습니다.",
+    val message: String = "Galaxy Watch와 Raspberry Pi를 연결하면 학습 세션을 시작할 수 있습니다.",
 )
 
 @Composable
@@ -214,7 +214,7 @@ class HomeViewModel @Inject constructor(
             sleepEmptyReason = if (sleepAvailable) {
                 "최근 수면 데이터를 불러왔습니다."
             } else {
-                "워치 앱이 아직 준비되지 않아 실제 수면 기록을 불러올 수 없습니다."
+                "워치 수면 동기화가 아직 비어 있습니다. 워치 앱 구현과 함께 연동됩니다."
             },
             timelineSegments = listOf(
                 TimelineSegment("안정 집중", 0.32f, SleepCarePrimary.copy(alpha = 0.22f), "오전 집중 구간"),
@@ -325,6 +325,7 @@ private fun Long.toTimerText(): String {
 
 private fun StudySessionState.toUiState(): StudySessionUiState {
     val busyPhases = setOf(
+        StudySessionPhase.ArmingWatch,
         StudySessionPhase.DiscoveringPi,
         StudySessionPhase.ConnectingPi,
         StudySessionPhase.OpeningSession,
@@ -332,6 +333,7 @@ private fun StudySessionState.toUiState(): StudySessionUiState {
     )
     return StudySessionUiState(
         isRunning = phase in setOf(
+            StudySessionPhase.ArmingWatch,
             StudySessionPhase.DiscoveringPi,
             StudySessionPhase.ConnectingPi,
             StudySessionPhase.OpeningSession,
@@ -342,9 +344,10 @@ private fun StudySessionState.toUiState(): StudySessionUiState {
         isBusy = phase in busyPhases,
         startedAt = startedAt,
         message = message ?: when (phase) {
+            StudySessionPhase.ArmingWatch -> "Galaxy Watch 세션을 준비하는 중입니다."
             StudySessionPhase.Alerting -> "라즈베리파이가 즉시 각성 알림을 보내는 중입니다."
             StudySessionPhase.Error -> "세션을 다시 시작해 주세요."
-            else -> "워치 앱이 없어도 Pi 기반 공부 세션은 바로 시작할 수 있습니다."
+            else -> "Galaxy Watch와 Raspberry Pi 연결을 확인해 주세요."
         },
     )
 }

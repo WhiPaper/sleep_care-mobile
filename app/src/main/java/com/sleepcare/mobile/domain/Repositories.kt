@@ -6,13 +6,32 @@ interface WatchSleepDataSource {
     suspend fun readRecentSleepSessions(): List<SleepSession>
 }
 
+interface WatchSessionDataSource {
+    fun observeConnectionState(): Flow<ConnectedDeviceState>
+    fun observeHeartRateBatches(): Flow<WatchHeartRateBatch>
+    fun observeSessionEvents(): Flow<WatchSessionEvent>
+    suspend fun refreshConnection(): Boolean
+    suspend fun startSession(config: WatchSessionConfig): Boolean
+    suspend fun stopSession(sessionId: String): Boolean
+    suspend fun acknowledgeCursor(cursor: WatchCursor): Boolean
+    suspend fun requestBackfill(sessionId: String, fromSampleSeq: Long): Boolean
+    suspend fun updateFlushPolicy(sessionId: String, flushPolicy: WatchFlushPolicy): Boolean
+    suspend fun sendVibrationAlert(sessionId: String, level: Int, pattern: String): Boolean
+    suspend fun disconnect()
+}
+
 interface PiNetworkDataSource {
     fun observeConnectionState(): Flow<ConnectedDeviceState>
     fun observeRiskState(): Flow<PiRiskUpdate?>
     fun observeAlerts(): Flow<PiAlertFire>
     fun observeSessionSummaries(): Flow<PiSessionSummary>
     suspend fun discoverAndConnect(): Boolean
-    suspend fun startSession(sessionId: String): Boolean
+    suspend fun startSession(
+        sessionId: String,
+        watchAvailable: Boolean,
+        eyeOnly: Boolean,
+    ): Boolean
+    suspend fun sendHeartRateSamples(samples: List<WatchHeartRateSample>): Set<Long>
     suspend fun stopSession(sessionId: String): PiSessionSummary?
     suspend fun retry(): Boolean
     suspend fun disconnect()

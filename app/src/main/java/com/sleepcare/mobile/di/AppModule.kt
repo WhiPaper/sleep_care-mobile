@@ -19,8 +19,9 @@ import com.sleepcare.mobile.data.repository.SleepCareRecommendationEngine
 import com.sleepcare.mobile.data.repository.SleepRepositoryImpl
 import com.sleepcare.mobile.data.repository.StudyPlanRepositoryImpl
 import com.sleepcare.mobile.data.repository.StudySessionRepositoryImpl
+import com.sleepcare.mobile.data.source.GalaxyWatchSessionDataSource
+import com.sleepcare.mobile.data.source.HealthConnectSleepDataSource
 import com.sleepcare.mobile.data.source.PiNetworkDataSourceImpl
-import com.sleepcare.mobile.data.source.UnavailableWatchSleepDataSource
 import com.sleepcare.mobile.domain.DeviceConnectionRepository
 import com.sleepcare.mobile.domain.DrowsinessRepository
 import com.sleepcare.mobile.domain.ExamScheduleRepository
@@ -31,6 +32,7 @@ import com.sleepcare.mobile.domain.SettingsRepository
 import com.sleepcare.mobile.domain.SleepRepository
 import com.sleepcare.mobile.domain.StudyPlanRepository
 import com.sleepcare.mobile.domain.StudySessionRepository
+import com.sleepcare.mobile.domain.WatchSessionDataSource
 import com.sleepcare.mobile.domain.WatchSleepDataSource
 import dagger.Binds
 import dagger.Module
@@ -75,7 +77,15 @@ object AppProvidesModule {
 
     @Provides
     @Singleton
-    fun provideWatchSleepDataSource(): WatchSleepDataSource = UnavailableWatchSleepDataSource()
+    fun provideWatchSleepDataSource(
+        impl: HealthConnectSleepDataSource,
+    ): WatchSleepDataSource = impl
+
+    @Provides
+    @Singleton
+    fun provideWatchSessionDataSource(
+        @ApplicationContext context: Context,
+    ): WatchSessionDataSource = GalaxyWatchSessionDataSource(context)
 
     @Provides
     @Singleton

@@ -1,5 +1,14 @@
 package com.sleepcare.mobile.domain
 
+import com.sleepcare.watch.contracts.WatchCursor as SharedWatchCursor
+import com.sleepcare.watch.contracts.WatchFlushPolicy as SharedWatchFlushPolicy
+import com.sleepcare.watch.contracts.WatchHeartRateBatch as SharedWatchHeartRateBatch
+import com.sleepcare.watch.contracts.WatchHeartRateSample as SharedWatchHeartRateSample
+import com.sleepcare.watch.contracts.WatchSessionClosed as SharedWatchSessionClosed
+import com.sleepcare.watch.contracts.WatchSessionConfig as SharedWatchSessionConfig
+import com.sleepcare.watch.contracts.WatchSessionError as SharedWatchSessionError
+import com.sleepcare.watch.contracts.WatchSessionEvent as SharedWatchSessionEvent
+import com.sleepcare.watch.contracts.WatchSessionReady as SharedWatchSessionReady
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -19,6 +28,7 @@ enum class ConnectionStatus {
 
 enum class StudySessionPhase {
     Idle,
+    ArmingWatch,
     DiscoveringPi,
     ConnectingPi,
     OpeningSession,
@@ -165,6 +175,16 @@ data class PiSessionSummary(
     val summaryReason: String?,
     val receivedAt: LocalDateTime,
 )
+
+typealias WatchFlushPolicy = SharedWatchFlushPolicy
+typealias WatchSessionConfig = SharedWatchSessionConfig
+typealias WatchHeartRateSample = SharedWatchHeartRateSample
+typealias WatchHeartRateBatch = SharedWatchHeartRateBatch
+typealias WatchCursor = SharedWatchCursor
+typealias WatchSessionEvent = SharedWatchSessionEvent
+typealias WatchSessionReady = SharedWatchSessionReady
+typealias WatchSessionError = SharedWatchSessionError
+typealias WatchSessionClosed = SharedWatchSessionClosed
 
 data class StudySessionState(
     val sessionId: String? = null,

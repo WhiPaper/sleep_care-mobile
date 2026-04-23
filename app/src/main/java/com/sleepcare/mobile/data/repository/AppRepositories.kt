@@ -41,7 +41,14 @@ import com.sleepcare.mobile.domain.StudySessionPhase
 import com.sleepcare.mobile.domain.StudySessionRepository
 import com.sleepcare.mobile.domain.StudySessionState
 import com.sleepcare.mobile.domain.UserGoals
-import com.sleepcare.mobile.domain.WatchSleepDataSource
+import com.sleepcare.mobile.domain.WatchFlushPolicy
+import com.sleepcare.mobile.domain.WatchSessionClosed
+import com.sleepcare.mobile.domain.WatchSessionConfig
+import com.sleepcare.mobile.domain.WatchSessionDataSource
+import com.sleepcare.mobile.domain.WatchSessionError
+import com.sleepcare.mobile.domain.WatchSessionReady
+import com.sleepcare.mobile.data.source.HealthConnectSleepDataSource
+import com.sleepcare.mobile.data.source.HealthConnectSleepState
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDate
@@ -56,28 +63,35 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Singleton
 class SleepRepositoryImpl @Inject constructor(
     private val sleepSessionDao: SleepSessionDao,
-    private val watchSleepDataSource: WatchSleepDataSource,
+    private val sleepDataSource: HealthConnectSleepDataSource,
     private val preferencesStore: PreferencesStore,
 ) : SleepRepository {
     override fun observeSleepSessions(): Flow<List<com.sleepcare.mobile.domain.SleepSession>> =
         sleepSessionDao.observeAll().map { items -> items.map { it.toDomain() } }
 
-    override suspend fun seedIfEmpty() = Unit
+    override suspend fun seedIfEmpty() {
+        refreshFromSource()
+    }
 
     override suspend fun refreshFromSource() {
-        val sessions = watchSleepDataSource.readRecentSleepSessions()
+        val sessions = sleepDataSource.readRecentSleepSessions()
         if (sessions.isNotEmpty()) {
+            sleepSessionDao.clear()
             sleepSessionDao.upsertAll(sessions.map { it.toEntity() })
             val current = preferencesStore.lastSyncState.first()
             preferencesStore.updateLastSyncState(current.copy(sleepSyncedAt = LocalDateTime.now()))
+        } else if (sleepDataSource.state.value.shouldClearCachedSleep()) {
+            sleepSessionDao.clear()
         }
     }
 }
@@ -214,46 +228,29 @@ class RecommendationRepositoryImpl @Inject constructor(
 @Singleton
 class DeviceConnectionRepositoryImpl @Inject constructor(
     private val piNetworkDataSource: PiNetworkDataSource,
+    private val watchSessionDataSource: WatchSessionDataSource,
 ) : DeviceConnectionRepository {
-    private val watchState = MutableStateFlow(
-        ConnectedDeviceState(
-            deviceType = DeviceType.Smartwatch,
-            deviceName = "Smartwatch",
-            status = ConnectionStatus.Disconnected,
-            details = "워치 앱 구현 전이라 아직 연결할 수 없습니다.",
-        )
-    )
-
     override fun observeDevices(): Flow<List<ConnectedDeviceState>> =
-        combine(piNetworkDataSource.observeConnectionState(), watchState) { pi, watch ->
+        combine(piNetworkDataSource.observeConnectionState(), watchSessionDataSource.observeConnectionState()) { pi, watch ->
             listOf(pi, watch)
         }
 
     override suspend fun startScan() {
+        watchSessionDataSource.refreshConnection()
         piNetworkDataSource.discoverAndConnect()
     }
 
     override suspend fun retryConnection(deviceType: DeviceType) {
         when (deviceType) {
             DeviceType.RaspberryPi -> piNetworkDataSource.retry()
-            DeviceType.Smartwatch -> {
-                watchState.value = watchState.value.copy(
-                    status = ConnectionStatus.Disconnected,
-                    details = "워치 앱 구현 전이라 재연결할 수 없습니다.",
-                )
-            }
+            DeviceType.Smartwatch -> watchSessionDataSource.refreshConnection()
         }
     }
 
     override suspend fun disconnect(deviceType: DeviceType) {
         when (deviceType) {
             DeviceType.RaspberryPi -> piNetworkDataSource.disconnect()
-            DeviceType.Smartwatch -> {
-                watchState.value = watchState.value.copy(
-                    status = ConnectionStatus.Disconnected,
-                    details = "워치 앱 준비 중",
-                )
-            }
+            DeviceType.Smartwatch -> watchSessionDataSource.disconnect()
         }
     }
 }
@@ -262,17 +259,88 @@ class DeviceConnectionRepositoryImpl @Inject constructor(
 class StudySessionRepositoryImpl @Inject constructor(
     private val studySessionDao: StudySessionDao,
     private val piNetworkDataSource: PiNetworkDataSource,
+    private val watchSessionDataSource: WatchSessionDataSource,
+    private val watchRelayStore: WatchRelayStore,
 ) : StudySessionRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val sessionState = MutableStateFlow(
-        StudySessionState(message = "라즈베리파이에 연결하면 학습 세션을 시작할 수 있습니다.")
+        StudySessionState(message = "Galaxy Watch와 라즈베리파이를 연결하면 학습 세션을 시작할 수 있습니다.")
     )
     private val alertCounts = mutableMapOf<String, Int>()
 
     init {
         scope.launch {
+            watchSessionDataSource.observeHeartRateBatches().collect { batch ->
+                val result = watchRelayStore.recordIncomingBatch(batch)
+                val deliveredSampleSeqs = piNetworkDataSource.sendHeartRateSamples(result.newSamples)
+                if (deliveredSampleSeqs.isNotEmpty()) {
+                    watchRelayStore.markForwarded(batch.sessionId, deliveredSampleSeqs)
+                }
+                val cursor = watchRelayStore.touchCursorAck(result.cursor)
+                watchSessionDataSource.acknowledgeCursor(cursor)
+                cursor.pendingBackfillFrom?.let { missingSeq ->
+                    watchSessionDataSource.requestBackfill(batch.sessionId, missingSeq)
+                }
+            }
+        }
+        scope.launch {
+            watchSessionDataSource.observeSessionEvents().collect { event ->
+                when (event) {
+                    is WatchSessionReady -> {
+                        sessionState.update { current ->
+                            if (current.sessionId != event.sessionId) current
+                            else current.copy(message = "Galaxy Watch가 세션 준비를 마쳤습니다.")
+                        }
+                    }
+
+                    is WatchSessionError -> {
+                        sessionState.update { current ->
+                            if (current.sessionId != event.sessionId) current
+                            else current.copy(
+                                phase = StudySessionPhase.Error,
+                                message = "Galaxy Watch 오류: ${event.detailMessage}",
+                            )
+                        }
+                        persistCurrentState()
+                    }
+
+                    is WatchSessionClosed -> {
+                        sessionState.update { current ->
+                            if (current.sessionId != event.sessionId || current.phase == StudySessionPhase.Idle) current
+                            else current.copy(
+                                message = "Galaxy Watch 세션 종료 완료",
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        scope.launch {
+            piNetworkDataSource.observeConnectionState().collect { state ->
+                if (state.status != ConnectionStatus.Connected) return@collect
+                watchRelayStore.getPendingSessionIds().forEach { sessionId ->
+                    val deliveredSampleSeqs = piNetworkDataSource.sendHeartRateSamples(
+                        watchRelayStore.getPendingSamples(sessionId)
+                    )
+                    if (deliveredSampleSeqs.isNotEmpty()) {
+                        watchRelayStore.markForwarded(sessionId, deliveredSampleSeqs)
+                    }
+                }
+            }
+        }
+        scope.launch {
             piNetworkDataSource.observeRiskState().collect { risk ->
                 if (risk == null) return@collect
+                if (risk.sessionId == sessionState.value.sessionId && risk.recommendedFlushSec != null) {
+                    watchSessionDataSource.updateFlushPolicy(
+                        sessionId = risk.sessionId,
+                        flushPolicy = WatchFlushPolicy(
+                            normalSec = 15,
+                            suspectSec = risk.recommendedFlushSec.coerceAtLeast(2),
+                            alertSec = 2,
+                        ),
+                    )
+                }
                 sessionState.update { current ->
                     if (current.sessionId != risk.sessionId) current
                     else current.copy(
@@ -290,6 +358,11 @@ class StudySessionRepositoryImpl @Inject constructor(
         }
         scope.launch {
             piNetworkDataSource.observeAlerts().collect { alert ->
+                watchSessionDataSource.sendVibrationAlert(
+                    sessionId = alert.sessionId,
+                    level = alert.level,
+                    pattern = "200,100,200,100,400",
+                )
                 alertCounts[alert.sessionId] = (alertCounts[alert.sessionId] ?: 0) + 1
                 sessionState.update { current ->
                     if (current.sessionId != alert.sessionId) current
@@ -319,6 +392,7 @@ class StudySessionRepositoryImpl @Inject constructor(
     override suspend fun startSession() {
         val current = sessionState.value
         if (current.phase in listOf(
+                StudySessionPhase.ArmingWatch,
                 StudySessionPhase.DiscoveringPi,
                 StudySessionPhase.ConnectingPi,
                 StudySessionPhase.OpeningSession,
@@ -333,14 +407,92 @@ class StudySessionRepositoryImpl @Inject constructor(
         val sessionId = "study-${startedAt.toLocalDate()}-${UUID.randomUUID().toString().take(8)}"
         sessionState.value = StudySessionState(
             sessionId = sessionId,
-            phase = StudySessionPhase.DiscoveringPi,
+            phase = StudySessionPhase.ArmingWatch,
             startedAt = startedAt,
+            message = "Galaxy Watch 세션을 준비하는 중입니다.",
+        )
+        persistCurrentState()
+
+        val watchReady = watchSessionDataSource.refreshConnection()
+        if (!watchReady) {
+            sessionState.value = StudySessionState(
+                sessionId = sessionId,
+                phase = StudySessionPhase.Error,
+                startedAt = startedAt,
+                message = "Galaxy Watch 연결을 찾지 못했습니다.",
+            )
+            persistCurrentState()
+            return
+        }
+
+        val watchStarted = watchSessionDataSource.startSession(WatchSessionConfig(sessionId = sessionId))
+        if (!watchStarted) {
+            sessionState.value = StudySessionState(
+                sessionId = sessionId,
+                phase = StudySessionPhase.Error,
+                startedAt = startedAt,
+                message = "Galaxy Watch 세션 시작에 실패했습니다.",
+            )
+            persistCurrentState()
+            return
+        }
+
+        val watchPrepared = withTimeoutOrNull(8_000) {
+            watchSessionDataSource.observeSessionEvents()
+                .filter { event ->
+                    event.sessionId == sessionId &&
+                        (event is WatchSessionReady || event is WatchSessionError)
+                }
+                .first()
+        }
+        when (watchPrepared) {
+            is WatchSessionError -> {
+                watchSessionDataSource.stopSession(sessionId)
+                sessionState.value = StudySessionState(
+                    sessionId = sessionId,
+                    phase = StudySessionPhase.Error,
+                    startedAt = startedAt,
+                    message = "Galaxy Watch 오류: ${watchPrepared.detailMessage}",
+                )
+                persistCurrentState()
+                return
+            }
+
+            is WatchSessionReady -> Unit
+
+            is WatchSessionClosed -> {
+                sessionState.value = StudySessionState(
+                    sessionId = sessionId,
+                    phase = StudySessionPhase.Error,
+                    startedAt = startedAt,
+                    message = "Galaxy Watch가 준비 전에 세션을 종료했습니다. 다시 시도해 주세요.",
+                )
+                persistCurrentState()
+                return
+            }
+
+            null -> {
+                watchSessionDataSource.stopSession(sessionId)
+                sessionState.value = StudySessionState(
+                    sessionId = sessionId,
+                    phase = StudySessionPhase.Error,
+                    startedAt = startedAt,
+                    message = "Galaxy Watch 준비 응답이 시간 내에 오지 않았습니다.",
+                )
+                persistCurrentState()
+                return
+            }
+        }
+
+        sessionState.value = sessionState.value.copy(
+            phase = StudySessionPhase.DiscoveringPi,
             message = "로컬 Wi-Fi에서 라즈베리파이를 찾는 중입니다.",
         )
         persistCurrentState()
 
         val connected = piNetworkDataSource.discoverAndConnect()
         if (!connected) {
+            watchSessionDataSource.stopSession(sessionId)
             sessionState.value = StudySessionState(
                 sessionId = sessionId,
                 phase = StudySessionPhase.Error,
@@ -357,7 +509,11 @@ class StudySessionRepositoryImpl @Inject constructor(
         )
         persistCurrentState()
 
-        val opened = piNetworkDataSource.startSession(sessionId)
+        val opened = piNetworkDataSource.startSession(
+            sessionId = sessionId,
+            watchAvailable = true,
+            eyeOnly = false,
+        )
         sessionState.value = if (opened) {
             StudySessionState(
                 sessionId = sessionId,
@@ -366,6 +522,7 @@ class StudySessionRepositoryImpl @Inject constructor(
                 message = "학습 세션이 진행 중입니다.",
             )
         } else {
+            watchSessionDataSource.stopSession(sessionId)
             StudySessionState(
                 sessionId = sessionId,
                 phase = StudySessionPhase.Error,
@@ -385,6 +542,12 @@ class StudySessionRepositoryImpl @Inject constructor(
         )
         persistCurrentState()
 
+        watchSessionDataSource.stopSession(sessionId)
+        withTimeoutOrNull(5_000) {
+            watchSessionDataSource.observeSessionEvents()
+                .filter { it.sessionId == sessionId && it is WatchSessionClosed }
+                .first()
+        }
         val summary = piNetworkDataSource.stopSession(sessionId)
         if (summary == null) {
             persistCurrentState(endedAt = LocalDateTime.now())
@@ -499,7 +662,7 @@ class SleepCareRecommendationEngine @Inject constructor() : RecommendationEngine
 
         val reason = when {
             examWakeCandidate != null && averageSleepMinutes == null ->
-                "시험 일정과 최근 졸음 패턴을 반영했어요. 수면 기록 보정은 워치 앱 준비 후 추가됩니다."
+                "시험 일정과 최근 졸음 패턴을 반영했어요. 수면 기록 보정은 Health Connect 연동 후 추가됩니다."
             examWakeCandidate != null ->
                 "시험 대비 기상 리듬과 최근 컨디션을 함께 반영했어요."
             averageSleepMinutes == null && recentDrowsiness.isNotEmpty() ->
@@ -531,7 +694,7 @@ class SleepCareRecommendationEngine @Inject constructor() : RecommendationEngine
                 RecommendationTip(
                     title = if (averageSleepMinutes == null) "수면 연동 안내" else "회복 루틴",
                     body = if (averageSleepMinutes == null) {
-                        "워치 앱이 준비되면 실제 수면 기록을 반영해 추천을 더 정교하게 조정합니다."
+                        "Health Connect 수면 동기화가 붙으면 실제 수면 기록을 반영해 추천을 더 정교하게 조정합니다."
                     } else if (needsExtraRecovery) {
                         "오후 ${recentDrowsiness.lastOrNull()?.timestamp?.toLocalTime() ?: LocalTime.of(14, 30)} 전후 15분 휴식을 권장합니다."
                     } else {
@@ -565,7 +728,7 @@ fun buildSleepAnalysisSnapshot(sessions: List<com.sleepcare.mobile.domain.SleepS
             latencyMinutes = 0,
             weeklyDurations = emptyList(),
             isAvailable = false,
-            emptyReason = "실제 수면 연동 준비 중입니다. 워치 앱이 연결되면 최근 수면 기록이 표시됩니다.",
+            emptyReason = "Health Connect 수면 데이터가 아직 없습니다. 권한, 가용성, 또는 실제 기록 여부를 확인해 주세요.",
         )
     }
     return SleepAnalysisSnapshot(
@@ -622,4 +785,14 @@ private fun Iterable<Double>.averageOrNull(): Double? {
         count++
     }
     return if (count == 0) null else sum / count
+}
+
+private fun HealthConnectSleepState.shouldClearCachedSleep(): Boolean = when (this) {
+    HealthConnectSleepState.PermissionDenied,
+    HealthConnectSleepState.Unavailable,
+    HealthConnectSleepState.ProviderUpdateRequired,
+    HealthConnectSleepState.NoData -> true
+    is HealthConnectSleepState.Error,
+    HealthConnectSleepState.Checking,
+    HealthConnectSleepState.Ready -> false
 }

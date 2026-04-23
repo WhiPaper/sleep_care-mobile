@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Active Session - Nocturnal Science</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#2f3132",
+                    "on-tertiary-fixed-variant": "#004e59",
+                    "on-error-container": "#ffdad6",
+                    "on-surface": "#e2e2e4",
+                    "primary": "#bdc2ff",
+                    "outline": "#908f9d",
+                    "on-surface-variant": "#c6c5d4",
+                    "secondary-fixed-dim": "#bac3ff",
+                    "on-primary-container": "#8690ee",
+                    "on-secondary-fixed-variant": "#293ca0",
+                    "primary-container": "#1a237e",
+                    "secondary": "#bac3ff",
+                    "surface-container": "#1e2021",
+                    "on-error": "#690005",
+                    "on-background": "#e2e2e4",
+                    "primary-fixed-dim": "#bdc2ff",
+                    "surface-container-high": "#282a2c",
+                    "surface-container-highest": "#333537",
+                    "surface-bright": "#37393b",
+                    "error-container": "#93000a",
+                    "surface-container-low": "#1a1c1d",
+                    "surface-container-lowest": "#0c0e10",
+                    "inverse-primary": "#4c56af",
+                    "secondary-container": "#2c3ea3",
+                    "on-secondary-container": "#a8b4ff",
+                    "surface-tint": "#bdc2ff",
+                    "on-tertiary-container": "#00a6bc",
+                    "on-secondary": "#08218a",
+                    "on-primary-fixed": "#000767",
+                    "on-tertiary": "#00363e",
+                    "surface": "#111415",
+                    "outline-variant": "#454652",
+                    "surface-variant": "#333537",
+                    "on-primary-fixed-variant": "#343d96",
+                    "on-secondary-fixed": "#00105c",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed": "#001f25",
+                    "tertiary-fixed": "#a1efff",
+                    "tertiary": "#44d8f1",
+                    "background": "#111415",
+                    "primary-fixed": "#e0e0ff",
+                    "secondary-fixed": "#dee0ff",
+                    "tertiary-fixed-dim": "#44d8f1",
+                    "tertiary-container": "#00353d",
+                    "inverse-surface": "#e2e2e4",
+                    "on-primary": "#1b247f",
+                    "surface-dim": "#111415"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .circular-progress {
+            background: conic-gradient(#bdc2ff 210deg, #1a237e 0deg);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body flex items-center justify-center min-h-screen">
+<!-- Wear OS Circular Canvas -->
+<div class="relative w-[384px] h-[384px] rounded-full bg-surface-container-lowest overflow-hidden flex flex-col items-center justify-center border-4 border-surface-container-low shadow-2xl">
+<!-- Background Atmospheric Glow -->
+<div class="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-tertiary-container via-transparent to-transparent"></div>
+<!-- Progress Ring (Session Duration) -->
+<div class="absolute inset-2 rounded-full circular-progress flex items-center justify-center">
+<div class="w-full h-full rounded-full bg-surface-container-lowest m-[2px]"></div>
+</div>
+<!-- Top Status Indicators -->
+<div class="absolute top-12 flex items-center gap-3 z-10">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="bluetooth">bluetooth</span>
+<div class="flex items-center gap-1 bg-tertiary-container/30 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-tertiary text-xs" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[10px] font-label font-semibold text-tertiary tracking-tight uppercase">Sensor</span>
+</div>
+</div>
+<!-- Center: Real-time HR Display -->
+<div class="relative z-10 flex flex-col items-center mt-4">
+<div class="flex items-baseline gap-1">
+<span class="text-7xl font-headline font-extrabold tracking-tighter text-on-surface">72</span>
+<div class="flex flex-col items-start -mb-2">
+<span class="material-symbols-outlined text-error text-2xl animate-pulse" data-icon="favorite" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest leading-none">BPM</span>
+</div>
+</div>
+<!-- Secondary Data: IBI -->
+<div class="mt-2 bg-surface-container-high/40 px-3 py-1 rounded-lg backdrop-blur-sm">
+<span class="text-xs font-label text-on-tertiary-container font-medium tracking-tight">IBI: <span class="font-bold">840ms</span></span>
+</div>
+</div>
+<!-- Bottom Status -->
+<div class="absolute bottom-12 flex flex-col items-center gap-1 z-10">
+<div class="flex items-center gap-1.5 opacity-80">
+<span class="material-symbols-outlined text-[12px] text-on-surface-variant" data-icon="sync">sync</span>
+<p class="text-[10px] font-label font-medium text-on-surface-variant">Last Sync: 12s ago</p>
+</div>
+</div>
+<!-- Decorative Focus Orb (Subtle Pulse Indication) -->
+<div class="absolute inset-0 rounded-full border border-primary/5 pointer-events-none"></div>
+</div>
+<!-- Hidden Components for Semantic Integrity as per Protocol -->
+<div class="hidden">
+<!-- TopAppBar (Suppressed for focused Wear OS task) -->
+<header class="flex flex-col items-center justify-center w-full px-6 w-full pt-4 pb-2 tonal-transition">
+<span class="text-[#bdc2ff] font-manrope font-bold text-xs uppercase tracking-widest">Nocturnal Science</span>
+</header>
+<!-- BottomNavBar (Suppressed for focused Wear OS task) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-center gap-4 px-4 py-2 bg-gradient-to-t from-[#111415] to-transparent">
+<div class="flex items-center justify-center bg-[#1a237e] text-[#bdc2ff] rounded-full p-2 w-10 h-10">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+</div>
+<div class="flex items-center justify-center text-[#c6c5d4] p-2">
+<span class="material-symbols-outlined" data-icon="bedtime">bedtime</span>
+</div>
+<div class="flex items-center justify-center text-[#c6c5d4] p-2">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</div>
+</nav>
+</div>
+</body></html>

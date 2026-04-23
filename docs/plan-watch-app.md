@@ -1,5 +1,12 @@
 # 워치 앱 계획
 
+## 현재 구현 상태
+- `:watch` Wear OS companion 모듈과 `:watch-contracts` 공유 계약 모듈을 추가했다.
+- 1차 대상은 **Galaxy Watch + Samsung Health Sensor SDK** 로 확정했다.
+- 워치 앱은 `Connection Waiting -> Active Session -> Alerting -> Watch Settings` 흐름, `WearableListenerService`, foreground tracking service 스캐폴드를 갖췄다.
+- 모바일 앱은 Wear OS Data Layer 기반 연결/ACK/백필, `session.ready / error / closed`, `hr.ingest` 중계 구조를 반영했다.
+- Samsung Health Sensor SDK AAR은 아직 워크스페이스에 연결되지 않아 현재 센서 백엔드는 build-safe placeholder 구현으로 둔다.
+
 ## 목표
 - 학습 세션 중 심박/IBI 데이터를 안정적으로 수집한다.
 - 모바일 앱과의 실시간 연동 및 진동 보조 경고를 구현한다.
@@ -14,21 +21,19 @@
 
 ## 기술 방향
 - 워치와 모바일 앱 간 실시간 통신은 Wear OS Data Layer를 기준으로 설계한다.
-- 심박/IBI 접근은 플랫폼 센서 SDK를 우선 검토한다.
-- 수면 기록은 Health Connect 또는 플랫폼 API와의 연동 가능성을 먼저 확인한다.
+- 심박/IBI 접근은 **Samsung Health Sensor SDK** 를 사용한다.
+- 수면 기록은 워치 앱 구현 범위와 함께 연동 경로를 검토한다.
 - 워치 앱 범위는 실시간 세션 연동과 최소한의 센서 파이프라인 검증에 우선 집중한다.
 
 ## 현재 범위
 ### 학습 세션
-- 심박/IBI 샘플 수집
-- 실시간 또는 배치 전달
-- 진동 경고 수신
-- 연결 복구 시 재전송
+- 워치 앱은 foreground tracking service, 10분 샘플 버퍼, Data Layer listener, 세션 UI 스캐폴드를 구현했다.
+- 모바일 앱은 워치 세션 시작/중지, 심박 샘플 큐/커서, ACK 커서, 백필 요청, `hr.ingest` 중계를 수행한다.
+- 실제 심박/IBI 연속 수집은 Samsung Health Sensor SDK AAR 연결 단계가 남아 있다.
 
 ### 수면 데이터
-- 수면 시작/종료 시각 확보 가능 여부 확인
-- 총 수면 시간 기록 경로 확인
-- 모바일 앱 연동 테스트
+- 워치 앱은 수면 기록을 직접 읽지 않고, 설정 화면에서 “휴대폰 Health Connect 관리” 상태를 보여준다.
+- 모바일 앱은 Health Connect 기반 수면 세션 읽기와 권한/미지원/무데이터 상태 분기를 구현했다.
 
 ## 후속 확장 가능성
 - 수면 단계 정보 활용 검토
@@ -37,11 +42,12 @@
 
 ## 구현 단계
 1. 대상 워치 플랫폼 확정
-2. 심박/IBI 접근 가능 여부 확인
+2. `:watch` / `:watch-contracts` 모듈 추가
 3. Wear OS Data Layer 통신 구성
-4. 수집 가능한 최소 데이터 정의
-5. 진동 경고와 재전송 처리 구현
-6. 수면 데이터 연동 경로 검증
+4. 모바일 앱 큐/커서 모델과 `hr.ingest` 중계 구현
+5. Health Connect 기반 수면 데이터 연동
+6. Samsung Health Sensor SDK 기반 실제 심박/IBI 수집 경로 연결
+7. 디바이스 환경에서 통합 검증
 
 ## 고려 사항
 - 워치 OS별 API 차이
@@ -50,9 +56,7 @@
 - 배터리 소모 최소화
 
 ## 협업 논의 포인트
-- 1차 대상 워치 플랫폼 선정
-- 심박/IBI 접근 SDK 결정
-- 수면 데이터 실제 소스 결정
+- Samsung Health Sensor SDK AAR 배치 방식 결정
+- `session.ready / error / close` 세부 payload 보강
 - 동기화 주기와 실패 처리 기준
-- 참고 의견: 워치 앱은 처음부터 많은 기능을 넣기보다 실시간 세션 연동 안정화에 집중하는 편이 현실적이다.
-- 참고 의견: 플랫폼 확정이 늦어지면 전체 일정 리스크가 커질 수 있다.
+- 참고 의견: 1차 범위는 워치 단 수면 분석보다 학습 세션의 실시간 심박 연동 안정화가 우선이다.

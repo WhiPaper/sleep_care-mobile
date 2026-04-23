@@ -30,6 +30,8 @@ import com.sleepcare.mobile.domain.SleepSession
 import com.sleepcare.mobile.domain.StudySessionState
 import com.sleepcare.mobile.domain.StudyPlan
 import com.sleepcare.mobile.domain.UserGoals
+import com.sleepcare.mobile.domain.WatchCursor
+import com.sleepcare.mobile.domain.WatchHeartRateSample
 import java.io.IOException
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -77,6 +79,30 @@ data class StudySessionEntity(
     val summaryMode: String?,
     val summaryReason: String?,
     val peakFusedScore: Double?,
+)
+
+@Entity(tableName = "watch_hr_samples")
+data class WatchHeartRateSampleEntity(
+    @PrimaryKey val id: String,
+    val sessionId: String,
+    val messageSequence: Long,
+    val sampleSeq: Long,
+    val sensorTimestampMs: Long,
+    val bpm: Int,
+    val hrStatus: Int,
+    val ibiMsSerialized: String,
+    val ibiStatusSerialized: String,
+    val deliveryMode: String,
+    val receivedAt: LocalDateTime,
+    val relayState: String,
+)
+
+@Entity(tableName = "watch_cursors")
+data class WatchCursorEntity(
+    @PrimaryKey val sessionId: String,
+    val highestContiguousSampleSeq: Long,
+    val pendingBackfillFrom: Long?,
+    val lastAckSentAt: LocalDateTime?,
 )
 
 @Entity(tableName = "study_plan")
@@ -180,6 +206,36 @@ interface StudySessionDao {
 }
 
 @Dao
+interface WatchHeartRateSampleDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(items: List<WatchHeartRateSampleEntity>)
+
+    @Query("SELECT sampleSeq FROM watch_hr_samples WHERE sessionId = :sessionId AND sampleSeq IN (:sampleSeqs)")
+    suspend fun getExistingSampleSeqs(sessionId: String, sampleSeqs: List<Long>): List<Long>
+
+    @Query("SELECT sampleSeq FROM watch_hr_samples WHERE sessionId = :sessionId AND sampleSeq > :afterSeq ORDER BY sampleSeq ASC")
+    suspend fun getSampleSeqsAfter(sessionId: String, afterSeq: Long): List<Long>
+
+    @Query("SELECT * FROM watch_hr_samples WHERE sessionId = :sessionId AND relayState = :relayState ORDER BY sampleSeq ASC")
+    suspend fun getByRelayState(sessionId: String, relayState: String): List<WatchHeartRateSampleEntity>
+
+    @Query("SELECT DISTINCT sessionId FROM watch_hr_samples WHERE relayState = :relayState")
+    suspend fun getSessionIdsByRelayState(relayState: String): List<String>
+
+    @Query("UPDATE watch_hr_samples SET relayState = :relayState WHERE sessionId = :sessionId AND sampleSeq IN (:sampleSeqs)")
+    suspend fun updateRelayState(sessionId: String, sampleSeqs: List<Long>, relayState: String)
+}
+
+@Dao
+interface WatchCursorDao {
+    @Query("SELECT * FROM watch_cursors WHERE sessionId = :sessionId LIMIT 1")
+    suspend fun getBySessionId(sessionId: String): WatchCursorEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(item: WatchCursorEntity)
+}
+
+@Dao
 interface StudyPlanDao {
     @Query("SELECT * FROM study_plan WHERE id = :id")
     fun observeById(id: Int = StudyPlan.DEFAULT_ID): Flow<StudyPlanEntity?>
@@ -229,11 +285,13 @@ interface RecommendationSnapshotDao {
         SleepSessionEntity::class,
         DrowsinessEventEntity::class,
         StudySessionEntity::class,
+        WatchHeartRateSampleEntity::class,
+        WatchCursorEntity::class,
         StudyPlanEntity::class,
         ExamScheduleEntity::class,
         RecommendationSnapshotEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 @TypeConverters(RoomConverters::class)
@@ -241,6 +299,8 @@ abstract class SleepCareDatabase : RoomDatabase() {
     abstract fun sleepSessionDao(): SleepSessionDao
     abstract fun drowsinessEventDao(): DrowsinessEventDao
     abstract fun studySessionDao(): StudySessionDao
+    abstract fun watchHeartRateSampleDao(): WatchHeartRateSampleDao
+    abstract fun watchCursorDao(): WatchCursorDao
     abstract fun studyPlanDao(): StudyPlanDao
     abstract fun examScheduleDao(): ExamScheduleDao
     abstract fun recommendationSnapshotDao(): RecommendationSnapshotDao
@@ -407,6 +467,48 @@ fun StudySessionEntity.toSummary(): PiSessionSummary? {
         receivedAt = endedAt,
     )
 }
+
+fun WatchHeartRateSampleEntity.toDomain(): WatchHeartRateSample = WatchHeartRateSample(
+    sessionId = sessionId,
+    messageSequence = messageSequence,
+    sampleSeq = sampleSeq,
+    sensorTimestampMs = sensorTimestampMs,
+    bpm = bpm,
+    hrStatus = hrStatus,
+    ibiMs = ibiMsSerialized.split(",").filter { it.isNotBlank() }.map(String::toInt),
+    ibiStatus = ibiStatusSerialized.split(",").filter { it.isNotBlank() }.map(String::toInt),
+    deliveryMode = deliveryMode,
+    receivedAt = receivedAt,
+)
+
+fun WatchHeartRateSample.toEntity(relayState: String = "pending"): WatchHeartRateSampleEntity = WatchHeartRateSampleEntity(
+    id = "$sessionId:$sampleSeq",
+    sessionId = sessionId,
+    messageSequence = messageSequence,
+    sampleSeq = sampleSeq,
+    sensorTimestampMs = sensorTimestampMs,
+    bpm = bpm,
+    hrStatus = hrStatus,
+    ibiMsSerialized = ibiMs.joinToString(","),
+    ibiStatusSerialized = ibiStatus.joinToString(","),
+    deliveryMode = deliveryMode,
+    receivedAt = receivedAt,
+    relayState = relayState,
+)
+
+fun WatchCursorEntity.toDomain(): WatchCursor = WatchCursor(
+    sessionId = sessionId,
+    highestContiguousSampleSeq = highestContiguousSampleSeq,
+    pendingBackfillFrom = pendingBackfillFrom,
+    lastAckSentAt = lastAckSentAt,
+)
+
+fun WatchCursor.toEntity(): WatchCursorEntity = WatchCursorEntity(
+    sessionId = sessionId,
+    highestContiguousSampleSeq = highestContiguousSampleSeq,
+    pendingBackfillFrom = pendingBackfillFrom,
+    lastAckSentAt = lastAckSentAt,
+)
 
 fun StudyPlanEntity.toDomain(): StudyPlan = StudyPlan(
     id = id,

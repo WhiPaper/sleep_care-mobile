@@ -1,0 +1,4 @@
+<resources>
+    <style name="Theme.SleepCareWatch" parent="@android:style/Theme.DeviceDefault" />
+    <style name="Theme.WatchSleepCare" parent="@style/Theme.SleepCareWatch" />
+</resources>

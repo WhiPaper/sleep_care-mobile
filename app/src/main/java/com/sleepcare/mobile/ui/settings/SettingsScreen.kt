@@ -1,5 +1,9 @@
 package com.sleepcare.mobile.ui.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,8 +24,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.sleepcare.mobile.data.source.HealthConnectSleepDataSource
+import com.sleepcare.mobile.data.source.HealthConnectSleepState
 import com.sleepcare.mobile.domain.NotificationPreferences
 import com.sleepcare.mobile.domain.SettingsRepository
+import com.sleepcare.mobile.domain.SleepRepository
 import com.sleepcare.mobile.ui.components.GlassCard
 import com.sleepcare.mobile.ui.components.toDisplayDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,7 +40,8 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val preferences: NotificationPreferences = NotificationPreferences(),
-    val lastSyncText: String = "워치 앱 준비 중",
+    val lastSyncText: String = "Health Connect 수면 동기화 대기 중",
+    val canRequestHealthConnectPermission: Boolean = false,
 )
 
 @Composable
@@ -44,6 +52,16 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val healthConnectPermissions = setOf(
+        HealthPermission.getReadPermission(SleepSessionRecord::class),
+    )
+    val permissionLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract(),
+    ) { granted ->
+        if (granted.containsAll(healthConnectPermissions)) {
+            viewModel.refreshSleepSync()
+        }
+    }
     LazyColumn(
         modifier = Modifier.padding(paddingValues),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
@@ -75,7 +93,7 @@ fun SettingsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("기기 관리", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "워치 앱은 아직 사용할 수 없고 Raspberry Pi 상태만 확인합니다.",
+                        "Galaxy Watch, Health Connect, 그리고 Raspberry Pi 연결 상태를 함께 확인합니다.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -90,7 +108,7 @@ fun SettingsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("연동 상태", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "워치 앱 준비 중 · Raspberry Pi 졸음 기록만 활성화됩니다.",
+                        "Galaxy Watch 세션 연동, Health Connect 수면 동기화, Raspberry Pi 졸음 기록을 함께 사용합니다.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -99,6 +117,14 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (uiState.canRequestHealthConnectPermission) {
+                        Button(
+                            onClick = { permissionLauncher.launch(healthConnectPermissions) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Health Connect 권한 요청")
+                        }
+                    }
                 }
             }
         }
@@ -149,11 +175,14 @@ private fun SettingSwitchCard(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val sleepRepository: SleepRepository,
+    private val sleepDataSource: HealthConnectSleepDataSource,
 ) : ViewModel() {
     val uiState = combine(
         settingsRepository.observeNotificationPreferences(),
         settingsRepository.observeLastSyncState(),
-    ) { preferences, lastSync ->
+        sleepDataSource.state,
+    ) { preferences, lastSync, sleepState ->
         SettingsUiState(
             preferences = preferences,
             lastSyncText = buildString {
@@ -164,8 +193,9 @@ class SettingsViewModel @Inject constructor(
                         "Pi 졸음 기록 없음"
                     }
                 )
-                append(" · 워치 앱 준비 중")
+                append(sleepState.toSettingsCopy(lastSync.sleepSyncedAt))
             },
+            canRequestHealthConnectPermission = sleepState is HealthConnectSleepState.PermissionDenied,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -174,4 +204,24 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.updateNotificationPreferences(preferences)
         }
     }
+
+    fun refreshSleepSync() {
+        viewModelScope.launch {
+            sleepRepository.refreshFromSource()
+        }
+    }
+}
+
+private fun HealthConnectSleepState.toSettingsCopy(lastSyncedAt: java.time.LocalDateTime?): String = when (this) {
+    HealthConnectSleepState.Ready -> if (lastSyncedAt != null) {
+        " · Health Connect 수면 ${lastSyncedAt.toDisplayDateTime()}"
+    } else {
+        " · Health Connect 수면 동기화 완료"
+    }
+    HealthConnectSleepState.Checking -> " · Health Connect 상태 확인 중"
+    HealthConnectSleepState.NoData -> " · Health Connect 수면 데이터 없음"
+    HealthConnectSleepState.PermissionDenied -> " · Health Connect 수면 권한 없음"
+    HealthConnectSleepState.Unavailable -> " · Health Connect 사용 불가"
+    HealthConnectSleepState.ProviderUpdateRequired -> " · Health Connect 업데이트 필요"
+    is HealthConnectSleepState.Error -> " · Health Connect 오류"
 }

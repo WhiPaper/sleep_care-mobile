@@ -50,36 +50,41 @@ fun DeviceConnectionScreen(
     ) {
         item { Text("기기 연결", style = MaterialTheme.typography.headlineMedium) }
         items(uiState.devices) { device ->
-            val watchUnavailable = device.deviceType == DeviceType.Smartwatch
             DeviceStatusCard(
-                deviceName = if (watchUnavailable) "워치 앱" else device.deviceName,
-                status = if (watchUnavailable) DeviceVisualStatus.Disconnected else device.status.toVisualStatus(),
-                subtitle = if (watchUnavailable) {
-                    "워치 앱이 아직 준비되지 않아 수면 기록을 사용할 수 없습니다."
+                deviceName = if (device.deviceType == DeviceType.Smartwatch) "Galaxy Watch" else device.deviceName,
+                status = device.status.toVisualStatus(),
+                subtitle = if (device.deviceType == DeviceType.Smartwatch) {
+                    "심박/IBI 수집과 워치 진동 보조 경고용"
                 } else {
                     "공부 중 졸음 감지 이벤트 수신용"
                 },
-                connectionDetails = if (watchUnavailable) {
-                    "스마트워치 데이터는 아직 비어 있습니다.\n워치 앱이 준비되면 수면 기록이 연결됩니다."
+                connectionDetails = if (device.deviceType == DeviceType.Smartwatch) {
+                    buildString {
+                        append(device.details ?: "Galaxy Watch를 찾는 중")
+                        append("\n수면 데이터 연동은 워치 앱 구현 범위에서 함께 정리합니다.")
+                        device.lastSeenAt?.let { append("\n마지막 확인 ${it.toDisplayDateTime()}") }
+                    }
                 } else {
                     buildString {
                         append(device.details ?: "준비 중")
                         device.lastSeenAt?.let { append("\n마지막 확인 ${it.toDisplayDateTime()}") }
                     }
                 },
-                statusLabel = if (watchUnavailable) "워치 앱 준비 중" else null,
-                actionLabel = if (watchUnavailable) null else when (device.status) {
+                statusLabel = if (device.deviceType == DeviceType.Smartwatch && device.status == ConnectionStatus.Connected) {
+                    "Galaxy Watch 연결됨"
+                } else {
+                    null
+                },
+                actionLabel = when (device.status) {
                     ConnectionStatus.Connected -> "연결 해제"
                     ConnectionStatus.Scanning -> null
                     ConnectionStatus.Disconnected, ConnectionStatus.Failed -> "다시 시도"
                 },
-                onActionClick = if (watchUnavailable) null else {
-                    {
-                        when (device.status) {
-                            ConnectionStatus.Connected -> viewModel.disconnect(device.deviceType)
-                            ConnectionStatus.Scanning -> Unit
-                            ConnectionStatus.Disconnected, ConnectionStatus.Failed -> viewModel.retry(device.deviceType)
-                        }
+                onActionClick = {
+                    when (device.status) {
+                        ConnectionStatus.Connected -> viewModel.disconnect(device.deviceType)
+                        ConnectionStatus.Scanning -> Unit
+                        ConnectionStatus.Disconnected, ConnectionStatus.Failed -> viewModel.retry(device.deviceType)
                     }
                 },
             )
@@ -89,7 +94,7 @@ fun DeviceConnectionScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("연결 안내", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "모바일 앱은 로컬 Wi-Fi에서 Raspberry Pi를 찾습니다. 워치 앱은 아직 사용할 수 없어 수면 동기화는 비어 있습니다.",
+                        "모바일 앱은 Galaxy Watch와 Wear OS Data Layer로 연결되고, Raspberry Pi는 로컬 Wi-Fi에서 찾습니다.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
