@@ -11,6 +11,8 @@
 /build
 /captures
 .DS_Store
+sleepcare_pi_dev_cert.pem
+sleepcare_pi_dev_key.pem
 /app/build
 /watch/build
 /watch-contracts/build
