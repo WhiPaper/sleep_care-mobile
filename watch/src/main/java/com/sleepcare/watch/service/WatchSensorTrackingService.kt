@@ -1,8 +1,10 @@
 package com.sleepcare.watch.service
 
+import android.Manifest
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -75,15 +77,49 @@ class WatchSensorTrackingService : Service() {
             return
         }
 
+        val missingPermissions = requiredRuntimePermissions.filter { permission ->
+            ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missingPermissions.isNotEmpty()) {
+            serviceScope.launch {
+                // 워치 앱을 먼저 열어 권한을 승인해야 하는 상황을 모바일에 명확히 알려 줍니다.
+                sendSessionError(
+                    sessionId = config.sessionId,
+                    code = "permission_required",
+                    message = "Watch permissions are required: ${missingPermissions.toReadableNames()}",
+                    recoverable = true,
+                )
+            }
+            WatchSessionStore.updatePermissions(false)
+            stopSelf()
+            return
+        }
+
         // 센서 수집은 백그라운드 제한을 피하기 위해 foreground service로 유지합니다.
-        startForeground(
-            WatchNotification.NOTIFICATION_ID,
-            WatchNotification.build(
-                this,
-                title = "SleepCare tracking",
-                content = "Preparing watch sensor session for ${config.sessionId}",
-            ),
-        )
+        val foregroundStarted = runCatching {
+            startForeground(
+                WatchNotification.NOTIFICATION_ID,
+                WatchNotification.build(
+                    this,
+                    title = "SleepCare tracking",
+                    content = "Preparing watch sensor session for ${config.sessionId}",
+                ),
+            )
+        }
+        foregroundStarted.onFailure { throwable ->
+            serviceScope.launch {
+                // health foreground service 조건이 맞지 않으면 ready 타임아웃 대신 원인을 회신합니다.
+                sendSessionError(
+                    sessionId = config.sessionId,
+                    code = "foreground_service_failed",
+                    message = throwable.message ?: "Unable to start watch foreground service.",
+                    recoverable = true,
+                )
+            }
+            WatchSessionStore.stopTracking("Foreground service failed")
+            stopSelf()
+            return
+        }
 
         serviceScope.launch {
             startSessionInternal(config)
@@ -287,6 +323,11 @@ class WatchSensorTrackingService : Service() {
     }
 
     companion object {
+        private val requiredRuntimePermissions = listOf(
+            Manifest.permission.BODY_SENSORS,
+            Manifest.permission.ACTIVITY_RECOGNITION,
+        )
+
         // 아래 헬퍼들은 외부 클래스가 action/extra를 직접 알지 않고 서비스를 시작하게 해 줍니다.
         fun start(context: Context, config: WatchSessionConfig) {
             WatchSessionIntents.startForegroundService(context, WatchSessionIntents.startSession(context, config))
@@ -331,5 +372,13 @@ class WatchSensorTrackingService : Service() {
         fun dismissAlert(context: Context) {
             WatchSessionIntents.startForegroundService(context, WatchSessionIntents.dismissAlert(context))
         }
+    }
+}
+
+private fun List<String>.toReadableNames(): String = joinToString { permission ->
+    when (permission) {
+        Manifest.permission.BODY_SENSORS -> "BODY_SENSORS"
+        Manifest.permission.ACTIVITY_RECOGNITION -> "ACTIVITY_RECOGNITION"
+        else -> permission.substringAfterLast('.')
     }
 }

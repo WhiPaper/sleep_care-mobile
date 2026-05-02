@@ -1,6 +1,7 @@
 package com.sleepcare.mobile.data.source
 
 import android.content.Context
+import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
@@ -17,6 +18,7 @@ import com.sleepcare.mobile.domain.WatchSessionDataSource
 import com.sleepcare.mobile.domain.WatchSessionError
 import com.sleepcare.mobile.domain.WatchSessionEvent
 import com.sleepcare.mobile.domain.WatchSessionReady
+import com.sleepcare.watch.contracts.WatchCapabilities
 import com.sleepcare.watch.contracts.WatchPaths
 import com.sleepcare.watch.contracts.WatchProtocolCodec
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -52,6 +54,7 @@ class GalaxyWatchSessionDataSource @Inject constructor(
     private val heartRateBatches = MutableSharedFlow<WatchHeartRateBatch>(extraBufferCapacity = 32)
     private val sessionEvents = MutableSharedFlow<WatchSessionEvent>(replay = 1, extraBufferCapacity = 16)
     private var currentNode: Node? = null
+    private var currentSessionRuntimeNode: Node? = null
     private var listenerRegistered = false
 
     init {
@@ -69,12 +72,14 @@ class GalaxyWatchSessionDataSource @Inject constructor(
 
     override suspend fun refreshConnection(): Boolean {
         ensureListenerRegistered()
-        // 가까운 노드를 우선 선택하면 실제 착용 중인 워치가 먼저 연결됩니다.
+        // 기기 연결 화면은 페어링된 Wear OS 노드를 기준으로 보여 주고,
+        // 실제 세션 명령은 별도로 SleepCare 워치 앱 capability가 있는 노드에만 보냅니다.
         val node = runCatching {
             Wearable.getNodeClient(context).connectedNodes.await()
                 .sortedWith(compareByDescending<Node> { it.isNearby }.thenBy { it.displayName })
                 .firstOrNull()
         }.getOrNull()
+        currentSessionRuntimeNode = runCatching { findSessionRuntimeNode() }.getOrNull()
         currentNode = node
         connectionState.value = if (node == null) {
             ConnectedDeviceState(
@@ -88,7 +93,12 @@ class GalaxyWatchSessionDataSource @Inject constructor(
                 deviceType = DeviceType.Smartwatch,
                 deviceName = node.displayName.ifBlank { "Galaxy Watch" },
                 status = ConnectionStatus.Connected,
-                details = if (node.isNearby) "Wear OS Data Layer 연결됨" else "원격 노드로 연결됨",
+                details = when {
+                    currentSessionRuntimeNode != null && node.isNearby -> "Wear OS Data Layer 연결됨 · SleepCare 워치 앱 준비됨"
+                    currentSessionRuntimeNode != null -> "원격 노드로 연결됨 · SleepCare 워치 앱 준비됨"
+                    node.isNearby -> "Wear OS Data Layer 연결됨 · SleepCare 워치 앱을 찾지 못했습니다"
+                    else -> "원격 노드로 연결됨 · SleepCare 워치 앱을 찾지 못했습니다"
+                },
                 lastSeenAt = LocalDateTime.now(),
             )
         }
@@ -115,6 +125,7 @@ class GalaxyWatchSessionDataSource @Inject constructor(
 
     override suspend fun disconnect() {
         currentNode = null
+        currentSessionRuntimeNode = null
         connectionState.value = connectionState.value.copy(
             status = ConnectionStatus.Disconnected,
             details = "Galaxy Watch 연결을 다시 확인하세요.",
@@ -151,9 +162,16 @@ class GalaxyWatchSessionDataSource @Inject constructor(
 
     private suspend fun sendMessage(path: String, payload: ByteArray): Boolean {
         ensureListenerRegistered()
-        // 현재 노드가 없으면 한 번 더 검색해 사용자가 방금 워치를 연결한 경우도 처리합니다.
-        val node = currentNode ?: if (refreshConnection()) currentNode else null
-        if (node == null) return false
+        // 세션 제어 메시지는 SleepCare 워치 앱 capability가 확인된 노드에만 보냅니다.
+        val node = currentSessionRuntimeNode ?: findSessionRuntimeNode()
+        if (node == null) {
+            refreshConnection()
+            connectionState.value = connectionState.value.copy(
+                details = "Wear OS 워치는 연결되어 있지만 SleepCare 워치 앱을 찾지 못했습니다.",
+            )
+            return false
+        }
+        currentSessionRuntimeNode = node
         return runCatching {
             Wearable.getMessageClient(context).sendMessage(node.id, path, payload).await()
             connectionState.value = connectionState.value.copy(
@@ -171,4 +189,12 @@ class GalaxyWatchSessionDataSource @Inject constructor(
             false
         }
     }
+
+    private suspend fun findSessionRuntimeNode(): Node? =
+        Wearable.getCapabilityClient(context)
+            .getCapability(WatchCapabilities.SessionRuntime, CapabilityClient.FILTER_REACHABLE)
+            .await()
+            .nodes
+            .sortedWith(compareByDescending<Node> { it.isNearby }.thenBy { it.displayName })
+            .firstOrNull()
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,10 +38,12 @@ import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.sleepcare.watch.model.WatchScreen
 import com.sleepcare.watch.model.WatchUiState
 
 // Wear OS 원형/소형 화면에 맞춘 워치 전용 Compose 화면 모음입니다.
+private val ScreenHorizontalPadding = 4.dp
+private val QuickActionSize = 40.dp
+private val OrbSize = 84.dp
 
 // 휴대폰에서 세션 시작 명령이 오기 전 대기 화면입니다.
 @Composable
@@ -52,15 +55,15 @@ fun ConnectionWaitingScreen(
 ) {
     ScreenContainer {
         BrandLine()
-        Spacer(Modifier.height(8.dp))
-        HaloOrb(
+        Spacer(Modifier.height(6.dp))
+        StatusOrb(
             icon = Icons.Filled.WifiOff,
             iconTint = MaterialTheme.colors.primary,
             title = state.connectionTitle,
             subtitle = state.connectionSubtitle,
             badge = state.connectionBadge,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
         Chip(
             onClick = onStartDemoSession,
             label = { Text("Open Session") },
@@ -87,9 +90,9 @@ fun ActiveSessionScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             StatusPill(text = "SENSOR", icon = Icons.Filled.Bluetooth, active = true)
             Spacer(Modifier.weight(1f))
-            SmallIconAction(Icons.Filled.Settings, onOpenSettings)
+            IconAction(Icons.Filled.Settings, onOpenSettings)
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,7 +129,7 @@ fun ActiveSessionScreen(
                     label = { Text("IBI: ${state.latestIbiMs}ms") },
                     colors = ChipDefaults.secondaryChipColors(),
                 )
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = state.lastSyncLabel,
                     color = MaterialTheme.colors.onSurface.copy(alpha = 0.8f),
@@ -150,8 +153,8 @@ fun AlertingScreen(
 ) {
     ScreenContainer {
         BrandLine()
-        Spacer(Modifier.height(10.dp))
-        HaloOrb(
+        Spacer(Modifier.height(8.dp))
+        StatusOrb(
             icon = Icons.Filled.NotificationsActive,
             iconTint = Color(0xFFBDC2FF),
             title = state.alertTitle,
@@ -174,16 +177,14 @@ fun WatchSettingsScreen(
     state: WatchUiState,
     onBackToConnection: () -> Unit,
     onBackToSession: () -> Unit,
-    onTogglePermissions: () -> Unit,
     onRefreshSleepSync: () -> Unit,
 ) {
     ScreenContainer {
         Column(modifier = Modifier.fillMaxWidth()) {
             SettingsRow(
-                title = "Permissions",
+                title = "Permission Status",
                 subtitle = state.permissionsStatusLabel,
                 icon = Icons.Filled.CheckCircle,
-                onClick = onTogglePermissions,
             )
             Spacer(Modifier.height(8.dp))
             SettingsRow(
@@ -202,9 +203,9 @@ fun WatchSettingsScreen(
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SmallIconAction(Icons.Filled.WifiOff, onBackToConnection)
-            SmallIconAction(Icons.Filled.DirectionsRun, onBackToSession)
-            SmallIconAction(Icons.Filled.Settings, onBackToConnection)
+            IconAction(Icons.Filled.WifiOff, onBackToConnection)
+            IconAction(Icons.Filled.DirectionsRun, onBackToSession)
+            IconAction(Icons.Filled.Settings, onBackToConnection)
         }
     }
 }
@@ -213,7 +214,9 @@ fun WatchSettingsScreen(
 @Composable
 private fun ScreenContainer(content: @Composable ColumnScope.() -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = ScreenHorizontalPadding),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         content = content,
@@ -241,8 +244,8 @@ private fun BrandLine() {
 
 // 아이콘을 둥근 원 안에 배치해 대기/알림 화면의 중심 요소로 사용합니다.
 @Composable
-private fun HaloOrb(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun StatusOrb(
+    icon: ImageVector,
     iconTint: Color,
     title: String,
     subtitle: String,
@@ -250,24 +253,18 @@ private fun HaloOrb(
     badgeColor: Color = MaterialTheme.colors.secondary,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // 중첩 원형 배경을 하나로 줄여 화면 전환 때 측정/그리기 비용을 낮춥니다.
         Box(
             modifier = Modifier
-                .size(108.dp)
+                .size(OrbSize)
                 .clip(CircleShape)
-                .background(Color(0xFF1A1C1D)),
+                .background(Color(0xFF1A1C1D))
+                .padding(18.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF282A2C)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(imageVector = icon, contentDescription = null, tint = iconTint)
-            }
+            Icon(imageVector = icon, contentDescription = null, tint = iconTint)
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = title,
             color = MaterialTheme.colors.onSurface,
@@ -282,7 +279,7 @@ private fun HaloOrb(
             style = MaterialTheme.typography.caption3,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         Chip(
             onClick = { },
             label = { Text(badge, color = badgeColor) },
@@ -296,8 +293,8 @@ private fun HaloOrb(
 private fun SettingsRow(
     title: String,
     subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
+    icon: ImageVector,
+    onClick: () -> Unit = {},
 ) {
     Chip(
         onClick = onClick,
@@ -314,7 +311,7 @@ private fun SettingsRow(
 @Composable
 private fun StatusPill(
     text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     active: Boolean,
 ) {
     Chip(
@@ -333,7 +330,7 @@ private fun StatusPill(
 @Composable
 private fun SmallActionChip(
     text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit,
 ) {
     Chip(
@@ -344,16 +341,16 @@ private fun SmallActionChip(
     )
 }
 
-// 공간이 좁은 워치 화면에서 아이콘만 강조하는 작은 액션입니다.
+// 공간이 좁은 워치 화면에서는 공백 텍스트 칩 대신 실제 아이콘 버튼을 사용해 레이아웃 계산을 줄입니다.
 @Composable
-private fun SmallIconAction(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun IconAction(
+    icon: ImageVector,
     onClick: () -> Unit,
 ) {
-    Chip(
+    Button(
         onClick = onClick,
-        label = { Text(" ") },
-        icon = { Icon(imageVector = icon, contentDescription = null) },
-        colors = ChipDefaults.secondaryChipColors(),
-    )
+        modifier = Modifier.size(QuickActionSize),
+    ) {
+        Icon(imageVector = icon, contentDescription = null)
+    }
 }

@@ -34,7 +34,7 @@ object WatchSessionStore {
 
     fun startDemoSession(sessionId: String = "demo-session") {
         _state.update {
-            // 실제 센서 백엔드가 붙기 전에도 화면 흐름을 확인할 수 있도록 기본 BPM/IBI를 채웁니다.
+            // 데모 시작은 화면 전환 확인용입니다. 실제 세션도 같은 상태 전환을 쓰므로 변경 필드를 최소화합니다.
             it.copy(
                 screen = WatchScreen.ActiveSession,
                 sessionId = sessionId,
@@ -96,6 +96,7 @@ object WatchSessionStore {
 
     fun updatePermissions(granted: Boolean) {
         _state.update {
+            // 실제 Android 권한 요청은 MainActivity에서 처리하고, Store는 UI 표시 상태만 보관합니다.
             it.copy(
                 permissionsGranted = granted,
                 permissionsStatusLabel = if (granted) "Granted" else "Pending",

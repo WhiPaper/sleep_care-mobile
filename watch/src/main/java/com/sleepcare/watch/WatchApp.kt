@@ -8,16 +8,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.TimeText
 import com.sleepcare.watch.model.WatchScreen
 import com.sleepcare.watch.runtime.WatchSessionStore
+import com.sleepcare.watch.ui.screen.ActiveSessionScreen
 import com.sleepcare.watch.ui.screen.AlertingScreen
 import com.sleepcare.watch.ui.screen.ConnectionWaitingScreen
-import com.sleepcare.watch.ui.screen.ActiveSessionScreen
 import com.sleepcare.watch.ui.screen.WatchSettingsScreen
 import com.sleepcare.watch.ui.theme.SleepCareWatchTheme
 
@@ -31,18 +30,11 @@ fun WatchApp() {
         Scaffold(
             timeText = { TimeText() },
         ) {
+            // 화면 전환 때마다 gradient brush를 다시 만들지 않도록 단색 배경을 사용합니다.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF00353D).copy(alpha = 0.35f),
-                                Color(0xFF111415),
-                                Color(0xFF111415),
-                            ),
-                        ),
-                    )
+                    .background(WatchBackgroundColor)
                     .padding(horizontal = 10.dp, vertical = 8.dp),
             ) {
                 // 워치 화면은 네비게이션 라이브러리 대신 단순 상태 전환으로 충분합니다.
@@ -72,7 +64,6 @@ fun WatchApp() {
                         state = state,
                         onBackToConnection = { WatchSessionStore.showConnectionWaiting() },
                         onBackToSession = { WatchSessionStore.restorePrimaryScreen() },
-                        onTogglePermissions = { WatchSessionStore.updatePermissions(!state.permissionsGranted) },
                         onRefreshSleepSync = { WatchSessionStore.updateSleepSyncStatus("Managed on phone") },
                     )
                 }
@@ -80,3 +71,5 @@ fun WatchApp() {
         }
     }
 }
+
+private val WatchBackgroundColor = Color(0xFF111415)

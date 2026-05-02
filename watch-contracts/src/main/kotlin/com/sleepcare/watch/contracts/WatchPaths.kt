@@ -27,3 +27,9 @@ object WatchPaths {
     const val Closed = SessionClosed
     const val Vibrate = AlertVibrate
 }
+
+// 모바일은 이 capability를 가진 노드에만 세션 시작 메시지를 보냅니다.
+// 단순 페어링 여부가 아니라 SleepCare 워치 앱 설치/도달 가능 여부를 확인하기 위한 기준입니다.
+object WatchCapabilities {
+    const val SessionRuntime = "sleepcare_watch_session_runtime"
+}

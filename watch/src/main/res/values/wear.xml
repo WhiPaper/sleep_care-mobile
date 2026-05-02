@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 휴대폰 앱이 SleepCare 워치 앱이 설치된 노드만 골라 세션 명령을 보내도록 광고합니다. -->
+    <string-array name="android_wear_capabilities">
+        <item>sleepcare_watch_session_runtime</item>
+    </string-array>
+</resources>
