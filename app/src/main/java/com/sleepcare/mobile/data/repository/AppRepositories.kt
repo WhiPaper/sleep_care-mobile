@@ -38,6 +38,7 @@ import com.sleepcare.mobile.domain.SleepAnalysisSnapshot
 import com.sleepcare.mobile.domain.SleepRepository
 import com.sleepcare.mobile.domain.StudyPlan
 import com.sleepcare.mobile.domain.StudyPlanRepository
+import com.sleepcare.mobile.domain.StudySessionMode
 import com.sleepcare.mobile.domain.StudySessionPhase
 import com.sleepcare.mobile.domain.StudySessionRepository
 import com.sleepcare.mobile.domain.StudySessionState
@@ -304,7 +305,12 @@ class StudySessionRepositoryImpl @Inject constructor(
     init {
         scope.launch {
             // 워치 심박 배치는 먼저 로컬에 저장하고, 새 샘플만 Pi로 전달합니다.
+            // Eye-only 세션은 워치 샘플을 기대하지 않으므로 현재 세션과 겹치는 배치는 무시합니다.
             watchSessionDataSource.observeHeartRateBatches().collect { batch ->
+                val current = sessionState.value
+                if (current.sessionId == batch.sessionId && current.mode == StudySessionMode.EyeOnly) {
+                    return@collect
+                }
                 val result = watchRelayStore.recordIncomingBatch(batch)
                 val deliveredSampleSeqs = piNetworkDataSource.sendHeartRateSamples(result.newSamples)
                 if (deliveredSampleSeqs.isNotEmpty()) {
@@ -365,10 +371,15 @@ class StudySessionRepositoryImpl @Inject constructor(
             }
         }
         scope.launch {
-            // Pi 위험도가 올라가면 UI 상태와 워치 전송 주기를 같이 갱신합니다.
+            // Pi 위험도가 올라가면 UI 상태를 갱신하고, 워치 포함 모드일 때만 전송 주기를 조정합니다.
             piNetworkDataSource.observeRiskState().collect { risk ->
                 if (risk == null) return@collect
-                if (risk.sessionId == sessionState.value.sessionId && risk.recommendedFlushSec != null) {
+                val current = sessionState.value
+                if (
+                    risk.sessionId == current.sessionId &&
+                    current.mode == StudySessionMode.WatchAndEye &&
+                    risk.recommendedFlushSec != null
+                ) {
                     watchSessionDataSource.updateFlushPolicy(
                         sessionId = risk.sessionId,
                         flushPolicy = WatchFlushPolicy(
@@ -394,13 +405,17 @@ class StudySessionRepositoryImpl @Inject constructor(
             }
         }
         scope.launch {
-            // alert.fire는 워치 진동으로 즉시 전달하고 세션별 알림 횟수를 누적합니다.
+            // alert.fire는 워치 포함 모드에서만 진동으로 전달하고, 공통으로 세션별 알림 횟수를 누적합니다.
             piNetworkDataSource.observeAlerts().collect { alert ->
-                watchSessionDataSource.sendVibrationAlert(
-                    sessionId = alert.sessionId,
-                    level = alert.level,
-                    pattern = "200,100,200,100,400",
-                )
+                val current = sessionState.value
+                val usesWatch = current.sessionId == alert.sessionId && current.mode == StudySessionMode.WatchAndEye
+                if (usesWatch) {
+                    watchSessionDataSource.sendVibrationAlert(
+                        sessionId = alert.sessionId,
+                        level = alert.level,
+                        pattern = "200,100,200,100,400",
+                    )
+                }
                 alertCounts[alert.sessionId] = (alertCounts[alert.sessionId] ?: 0) + 1
                 sessionState.update { current ->
                     if (current.sessionId != alert.sessionId) current
@@ -428,7 +443,7 @@ class StudySessionRepositoryImpl @Inject constructor(
 
     override fun observeSessionState(): Flow<StudySessionState> = sessionState
 
-    override suspend fun startSession() {
+    override suspend fun startSession(mode: StudySessionMode) {
         val current = sessionState.value
         // 이미 시작/종료 진행 중인 세션이 있으면 중복 시작을 막습니다.
         if (current.phase in listOf(
@@ -438,6 +453,7 @@ class StudySessionRepositoryImpl @Inject constructor(
                 StudySessionPhase.OpeningSession,
                 StudySessionPhase.Running,
                 StudySessionPhase.Alerting,
+                StudySessionPhase.Stopping,
             )
         ) {
             return
@@ -447,81 +463,97 @@ class StudySessionRepositoryImpl @Inject constructor(
         val sessionId = "study-${startedAt.toLocalDate()}-${UUID.randomUUID().toString().take(8)}"
         sessionState.value = StudySessionState(
             sessionId = sessionId,
-            phase = StudySessionPhase.ArmingWatch,
+            phase = if (mode == StudySessionMode.WatchAndEye) {
+                StudySessionPhase.ArmingWatch
+            } else {
+                StudySessionPhase.DiscoveringPi
+            },
+            mode = mode,
             startedAt = startedAt,
-            message = "Galaxy Watch 세션을 준비하는 중입니다.",
+            message = if (mode == StudySessionMode.WatchAndEye) {
+                "Galaxy Watch 세션을 준비하는 중입니다."
+            } else {
+                "워치 없이 Pi 카메라만으로 세션을 준비합니다."
+            },
         )
         persistCurrentState()
 
-        val watchReady = watchSessionDataSource.refreshConnection()
-        if (!watchReady) {
-            sessionState.value = StudySessionState(
-                sessionId = sessionId,
-                phase = StudySessionPhase.Error,
-                startedAt = startedAt,
-                message = "Galaxy Watch 연결을 찾지 못했습니다.",
-            )
-            persistCurrentState()
-            return
-        }
+        if (mode == StudySessionMode.WatchAndEye) {
+            val watchReady = watchSessionDataSource.refreshConnection()
+            if (!watchReady) {
+                sessionState.value = StudySessionState(
+                    sessionId = sessionId,
+                    phase = StudySessionPhase.Error,
+                    mode = mode,
+                    startedAt = startedAt,
+                    message = "Galaxy Watch 연결을 찾지 못했습니다.",
+                )
+                persistCurrentState()
+                return
+            }
 
-        // 워치가 실제 센서 세션을 준비했다는 ready 응답을 기다린 뒤 Pi 세션을 엽니다.
-        val watchStarted = watchSessionDataSource.startSession(WatchSessionConfig(sessionId = sessionId))
-        if (!watchStarted) {
-            sessionState.value = StudySessionState(
-                sessionId = sessionId,
-                phase = StudySessionPhase.Error,
-                startedAt = startedAt,
-                message = "Galaxy Watch 세션 시작에 실패했습니다.",
-            )
-            persistCurrentState()
-            return
-        }
+            // 워치가 실제 센서 세션을 준비했다는 ready 응답을 기다린 뒤 Pi 세션을 엽니다.
+            val watchStarted = watchSessionDataSource.startSession(WatchSessionConfig(sessionId = sessionId))
+            if (!watchStarted) {
+                sessionState.value = StudySessionState(
+                    sessionId = sessionId,
+                    phase = StudySessionPhase.Error,
+                    mode = mode,
+                    startedAt = startedAt,
+                    message = "Galaxy Watch 세션 시작에 실패했습니다.",
+                )
+                persistCurrentState()
+                return
+            }
 
-        val watchPrepared = withTimeoutOrNull(8_000) {
-            watchSessionDataSource.observeSessionEvents()
-                .filter { event ->
-                    event.sessionId == sessionId &&
-                        (event is WatchSessionReady || event is WatchSessionError)
+            val watchPrepared = withTimeoutOrNull(8_000) {
+                watchSessionDataSource.observeSessionEvents()
+                    .filter { event ->
+                        event.sessionId == sessionId &&
+                            (event is WatchSessionReady || event is WatchSessionError)
+                    }
+                    .first()
+            }
+            when (watchPrepared) {
+                is WatchSessionError -> {
+                    watchSessionDataSource.stopSession(sessionId)
+                    sessionState.value = StudySessionState(
+                        sessionId = sessionId,
+                        phase = StudySessionPhase.Error,
+                        mode = mode,
+                        startedAt = startedAt,
+                        message = "Galaxy Watch 오류: ${watchPrepared.detailMessage}",
+                    )
+                    persistCurrentState()
+                    return
                 }
-                .first()
-        }
-        when (watchPrepared) {
-            is WatchSessionError -> {
-                watchSessionDataSource.stopSession(sessionId)
-                sessionState.value = StudySessionState(
-                    sessionId = sessionId,
-                    phase = StudySessionPhase.Error,
-                    startedAt = startedAt,
-                    message = "Galaxy Watch 오류: ${watchPrepared.detailMessage}",
-                )
-                persistCurrentState()
-                return
-            }
 
-            is WatchSessionReady -> Unit
+                is WatchSessionReady -> Unit
 
-            is WatchSessionClosed -> {
-                sessionState.value = StudySessionState(
-                    sessionId = sessionId,
-                    phase = StudySessionPhase.Error,
-                    startedAt = startedAt,
-                    message = "Galaxy Watch가 준비 전에 세션을 종료했습니다. 다시 시도해 주세요.",
-                )
-                persistCurrentState()
-                return
-            }
+                is WatchSessionClosed -> {
+                    sessionState.value = StudySessionState(
+                        sessionId = sessionId,
+                        phase = StudySessionPhase.Error,
+                        mode = mode,
+                        startedAt = startedAt,
+                        message = "Galaxy Watch가 준비 전에 세션을 종료했습니다. 다시 시도해 주세요.",
+                    )
+                    persistCurrentState()
+                    return
+                }
 
-            null -> {
-                watchSessionDataSource.stopSession(sessionId)
-                sessionState.value = StudySessionState(
-                    sessionId = sessionId,
-                    phase = StudySessionPhase.Error,
-                    startedAt = startedAt,
-                    message = "Galaxy Watch 준비 응답이 시간 내에 오지 않았습니다.",
-                )
-                persistCurrentState()
-                return
+                null -> {
+                    watchSessionDataSource.stopSession(sessionId)
+                    sessionState.value = StudySessionState(
+                        sessionId = sessionId,
+                        phase = StudySessionPhase.Error,
+                        mode = mode,
+                        startedAt = startedAt,
+                        message = "Galaxy Watch 준비 응답이 시간 내에 오지 않았습니다.",
+                    )
+                    persistCurrentState()
+                    return
+                }
             }
         }
 
@@ -534,10 +566,13 @@ class StudySessionRepositoryImpl @Inject constructor(
         // Pi 연결 실패 시 워치 세션도 함께 닫아 양쪽 상태가 엇갈리지 않게 합니다.
         val connected = piNetworkDataSource.discoverAndConnect()
         if (!connected) {
-            watchSessionDataSource.stopSession(sessionId)
+            if (mode == StudySessionMode.WatchAndEye) {
+                watchSessionDataSource.stopSession(sessionId)
+            }
             sessionState.value = StudySessionState(
                 sessionId = sessionId,
                 phase = StudySessionPhase.Error,
+                mode = mode,
                 startedAt = startedAt,
                 message = "라즈베리파이 연결에 실패했습니다.",
             )
@@ -553,21 +588,29 @@ class StudySessionRepositoryImpl @Inject constructor(
 
         val opened = piNetworkDataSource.startSession(
             sessionId = sessionId,
-            watchAvailable = true,
-            eyeOnly = false,
+            watchAvailable = mode == StudySessionMode.WatchAndEye,
+            eyeOnly = mode == StudySessionMode.EyeOnly,
         )
         sessionState.value = if (opened) {
             StudySessionState(
                 sessionId = sessionId,
                 phase = StudySessionPhase.Running,
+                mode = mode,
                 startedAt = startedAt,
-                message = "학습 세션이 진행 중입니다.",
+                message = if (mode == StudySessionMode.WatchAndEye) {
+                    "학습 세션이 진행 중입니다."
+                } else {
+                    "Eye only 세션이 진행 중입니다."
+                },
             )
         } else {
-            watchSessionDataSource.stopSession(sessionId)
+            if (mode == StudySessionMode.WatchAndEye) {
+                watchSessionDataSource.stopSession(sessionId)
+            }
             StudySessionState(
                 sessionId = sessionId,
                 phase = StudySessionPhase.Error,
+                mode = mode,
                 startedAt = startedAt,
                 message = "라즈베리파이가 세션 시작을 승인하지 않았습니다.",
             )
@@ -584,11 +627,13 @@ class StudySessionRepositoryImpl @Inject constructor(
         )
         persistCurrentState()
 
-        watchSessionDataSource.stopSession(sessionId)
-        withTimeoutOrNull(5_000) {
-            watchSessionDataSource.observeSessionEvents()
-                .filter { it.sessionId == sessionId && it is WatchSessionClosed }
-                .first()
+        if (current.mode == StudySessionMode.WatchAndEye) {
+            watchSessionDataSource.stopSession(sessionId)
+            withTimeoutOrNull(5_000) {
+                watchSessionDataSource.observeSessionEvents()
+                    .filter { it.sessionId == sessionId && it is WatchSessionClosed }
+                    .first()
+            }
         }
         val summary = piNetworkDataSource.stopSession(sessionId)
         if (summary == null) {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import com.sleepcare.mobile.domain.ExamScheduleRepository
 import com.sleepcare.mobile.domain.HomeDashboardSnapshot
 import com.sleepcare.mobile.domain.RecommendationRepository
 import com.sleepcare.mobile.domain.SleepRepository
+import com.sleepcare.mobile.domain.StudySessionMode
 import com.sleepcare.mobile.domain.StudySessionPhase
 import com.sleepcare.mobile.domain.StudySessionRepository
 import com.sleepcare.mobile.domain.StudySessionState
@@ -49,6 +51,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -66,6 +69,7 @@ data class HomeUiState(
 data class StudySessionUiState(
     val isRunning: Boolean = false,
     val isBusy: Boolean = false,
+    val selectedMode: StudySessionMode = StudySessionMode.WatchAndEye,
     val startedAt: LocalDateTime? = null,
     val message: String = "Galaxy Watch와 Raspberry Pi를 연결하면 학습 세션을 시작할 수 있습니다.",
 )
@@ -98,11 +102,12 @@ fun HomeScreen(
             StudySessionCard(
                 session = uiState.studySession,
                 timerText = timerText,
+                onModeSelected = viewModel::selectStudySessionMode,
                 onToggleClick = {
                     if (uiState.studySession.isRunning) {
                         viewModel.stopStudySession()
                     } else {
-                        viewModel.startStudySession()
+                        viewModel.startStudySession(uiState.studySession.selectedMode)
                     }
                 },
             )
@@ -198,7 +203,9 @@ class HomeViewModel @Inject constructor(
     examScheduleRepository: ExamScheduleRepository,
     private val studySessionRepository: StudySessionRepository,
 ) : ViewModel() {
-    val uiState = combine(
+    private val selectedStudySessionMode = MutableStateFlow(StudySessionMode.WatchAndEye)
+
+    private val dashboardState = combine(
         sleepRepository.observeSleepSessions(),
         drowsinessRepository.observeDrowsinessEvents(),
         recommendationRepository.observeLatestRecommendation(),
@@ -232,15 +239,23 @@ class HomeViewModel @Inject constructor(
                 TimelineSegment("마무리", 0.32f, SleepCarePrimary.copy(alpha = 0.16f), "취침 전"),
             ),
         )
+    }
+
+    val uiState = combine(dashboardState, selectedStudySessionMode) { state, selectedMode ->
+        state.copy(studySession = state.studySession.copy(selectedMode = selectedMode))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeUiState(),
     )
 
-    fun startStudySession() {
+    fun selectStudySessionMode(mode: StudySessionMode) {
+        selectedStudySessionMode.value = mode
+    }
+
+    fun startStudySession(mode: StudySessionMode) {
         viewModelScope.launch {
-            studySessionRepository.startSession()
+            studySessionRepository.startSession(mode)
         }
     }
 
@@ -256,6 +271,7 @@ class HomeViewModel @Inject constructor(
 private fun StudySessionCard(
     session: StudySessionUiState,
     timerText: String?,
+    onModeSelected: (StudySessionMode) -> Unit,
     onToggleClick: () -> Unit,
 ) {
     GlassCard(
@@ -278,6 +294,19 @@ private fun StudySessionCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (!session.isRunning) {
+                // 명시적으로 선택한 모드만 사용합니다. 자동 eye-only 전환은 세션 의도를 흐리므로 여기서는 다루지 않습니다.
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StudySessionMode.values().forEach { mode ->
+                        FilterChip(
+                            selected = session.selectedMode == mode,
+                            onClick = { onModeSelected(mode) },
+                            enabled = !session.isBusy,
+                            label = { Text(mode.label) },
+                        )
+                    }
+                }
+            }
             Button(
                 onClick = onToggleClick,
                 modifier = Modifier.fillMaxWidth(),
@@ -354,6 +383,7 @@ private fun StudySessionState.toUiState(): StudySessionUiState {
             StudySessionPhase.Stopping,
         ),
         isBusy = phase in busyPhases,
+        selectedMode = mode,
         startedAt = startedAt,
         message = message ?: when (phase) {
             StudySessionPhase.ArmingWatch -> "Galaxy Watch 세션을 준비하는 중입니다."
@@ -363,3 +393,9 @@ private fun StudySessionState.toUiState(): StudySessionUiState {
         },
     )
 }
+
+private val StudySessionMode.label: String
+    get() = when (this) {
+        StudySessionMode.WatchAndEye -> "워치 포함"
+        StudySessionMode.EyeOnly -> "Eye only"
+    }

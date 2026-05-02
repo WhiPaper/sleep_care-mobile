@@ -44,6 +44,12 @@ enum class StudySessionPhase {
     Error,
 }
 
+// 공부 세션을 어떤 센서 조합으로 열지 나타냅니다. EyeOnly는 워치가 없어도 Pi 카메라만으로 운영할 수 있는 모드입니다.
+enum class StudySessionMode {
+    WatchAndEye,
+    EyeOnly,
+}
+
 // Health Connect에서 가져오거나 로컬 DB에 저장하는 하루 수면 세션 요약입니다.
 data class SleepSession(
     val id: String,
@@ -236,6 +242,7 @@ typealias WatchSessionClosed = SharedWatchSessionClosed
 data class StudySessionState(
     val sessionId: String? = null,
     val phase: StudySessionPhase = StudySessionPhase.Idle,
+    val mode: StudySessionMode = StudySessionMode.WatchAndEye,
     val startedAt: LocalDateTime? = null,
     val latestRisk: PiRiskUpdate? = null,
     val latestAlert: PiAlertFire? = null,

@@ -114,7 +114,9 @@
 - Repository 계층에서 라즈베리파이 통신, 학습 세션 상태, 수면 데이터 소스를 분리한다.
 - Room은 구조화된 세션 및 분석 데이터 저장소로 사용하고 DataStore는 경량 설정 저장에 한정한다.
 - 실제 수면 데이터가 없을 때도 홈/분석/추천이 동작하도록 empty state를 명시적으로 유지한다.
-- 워치 handshake는 `ArmingWatch -> OpeningSession -> Running` 전이를 사용하고, 워치 `ready` 전에는 Pi 세션을 열지 않는다.
+- 공부 세션은 홈 카드에서 `워치 포함` 또는 `Eye only` 모드를 선택해 시작한다.
+- 워치 포함 모드는 `ArmingWatch -> OpeningSession -> Running` 전이를 사용하고, 워치 `ready` 전에는 Pi 세션을 열지 않는다.
+- Eye only 모드는 워치 handshake를 생략하고 Pi 카메라 세션을 바로 준비하며, 자동 fallback이 아니라 사용자가 명시적으로 선택한 경우에만 동작한다.
 
 ## 협업 논의 포인트
 - 홈 화면 핵심 카드 우선순위

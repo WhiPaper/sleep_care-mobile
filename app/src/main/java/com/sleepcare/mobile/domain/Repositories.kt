@@ -91,7 +91,7 @@ interface DeviceConnectionRepository {
 
 interface StudySessionRepository {
     fun observeSessionState(): Flow<StudySessionState>
-    suspend fun startSession()
+    suspend fun startSession(mode: StudySessionMode = StudySessionMode.WatchAndEye)
     suspend fun stopSession()
 }
 

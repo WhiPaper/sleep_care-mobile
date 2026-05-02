@@ -281,7 +281,9 @@ pong
 - 구현됨: `hello`, `hello_ack`, `session.open`, `session.ack`, `risk.update`, `alert.fire`, `session.close`, `session.summary`, `ping`, `pong`
 - 모바일 앱 구현됨: `hr.ingest`, 워치 ACK 커서, 백필 요청, 워치 진동 요청, `session.ready / error / close`
 - 미구현: `alert.clear`, 일반 `ack`, Samsung Health Sensor SDK 실센서 backend
-- 모바일 앱은 워치 세션을 전제로 동작하며, `session.open` 과 `hello` 에서 `watch_available=true`, `eye_only=false` 를 사용한다.
+- 모바일 앱은 홈 공부 시작 카드에서 사용자가 선택한 세션 모드에 따라 `session.open` 필드를 채운다.
+  `워치 포함` 모드는 `watch_available=true`, `eye_only=false` 로 심박 보조 신호를 함께 사용하고,
+  `Eye only` 모드는 `watch_available=false`, `eye_only=true` 로 워치 준비 없이 Pi 카메라 세션만 연다.
 
 ---
 
