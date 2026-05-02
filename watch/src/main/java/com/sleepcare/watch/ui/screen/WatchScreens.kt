@@ -40,6 +40,9 @@ import androidx.wear.compose.material.Text
 import com.sleepcare.watch.model.WatchScreen
 import com.sleepcare.watch.model.WatchUiState
 
+// Wear OS 원형/소형 화면에 맞춘 워치 전용 Compose 화면 모음입니다.
+
+// 휴대폰에서 세션 시작 명령이 오기 전 대기 화면입니다.
 @Composable
 fun ConnectionWaitingScreen(
     state: WatchUiState,
@@ -72,6 +75,7 @@ fun ConnectionWaitingScreen(
     }
 }
 
+// 심박 수집 중인 세션 화면입니다. BPM, IBI, 최근 동기화 상태를 크게 보여줍니다.
 @Composable
 fun ActiveSessionScreen(
     state: WatchUiState,
@@ -138,6 +142,7 @@ fun ActiveSessionScreen(
     }
 }
 
+// Pi가 위험 상태를 감지해 워치 진동 알림을 띄울 때 사용하는 화면입니다.
 @Composable
 fun AlertingScreen(
     state: WatchUiState,
@@ -163,6 +168,7 @@ fun AlertingScreen(
     }
 }
 
+// 권한, 수면 로그, 센서 상태를 작은 칩 목록으로 보여주는 설정 화면입니다.
 @Composable
 fun WatchSettingsScreen(
     state: WatchUiState,
@@ -203,6 +209,7 @@ fun WatchSettingsScreen(
     }
 }
 
+// 모든 워치 화면을 중앙 정렬하는 공통 컨테이너입니다.
 @Composable
 private fun ScreenContainer(content: @Composable ColumnScope.() -> Unit) {
     Column(
@@ -213,6 +220,7 @@ private fun ScreenContainer(content: @Composable ColumnScope.() -> Unit) {
     )
 }
 
+// 브랜드/상태 라벨을 짧게 보여주는 상단 줄입니다.
 @Composable
 private fun BrandLine() {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -231,6 +239,7 @@ private fun BrandLine() {
     }
 }
 
+// 아이콘을 둥근 원 안에 배치해 대기/알림 화면의 중심 요소로 사용합니다.
 @Composable
 private fun HaloOrb(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -282,6 +291,7 @@ private fun HaloOrb(
     }
 }
 
+// 설정 화면에서 쓰는 두 줄짜리 클릭 칩입니다.
 @Composable
 private fun SettingsRow(
     title: String,
@@ -300,6 +310,7 @@ private fun SettingsRow(
     )
 }
 
+// 세션 화면의 작은 상태 배지입니다.
 @Composable
 private fun StatusPill(
     text: String,
@@ -318,6 +329,7 @@ private fun StatusPill(
     )
 }
 
+// 텍스트와 아이콘이 함께 들어가는 작은 행동 칩입니다.
 @Composable
 private fun SmallActionChip(
     text: String,
@@ -332,6 +344,7 @@ private fun SmallActionChip(
     )
 }
 
+// 공간이 좁은 워치 화면에서 아이콘만 강조하는 작은 액션입니다.
 @Composable
 private fun SmallIconAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,

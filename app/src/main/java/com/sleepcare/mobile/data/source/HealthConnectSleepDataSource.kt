@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
+// Health Connect 수면 연동이 왜 비어 있는지 UI가 설명할 수 있게 세분화한 상태입니다.
 sealed interface HealthConnectSleepState {
     data object Checking : HealthConnectSleepState
     data object Ready : HealthConnectSleepState
@@ -32,6 +33,8 @@ sealed interface HealthConnectSleepState {
     data class Error(val message: String) : HealthConnectSleepState
 }
 
+// Health Connect에서 최근 수면 세션을 읽어 도메인 SleepSession으로 변환합니다.
+// 권한/앱 설치/프로바이더 업데이트 문제를 모두 상태 Flow로 노출합니다.
 @Singleton
 class HealthConnectSleepDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -46,6 +49,7 @@ class HealthConnectSleepDataSource @Inject constructor(
     override suspend fun readRecentSleepSessions(): List<SleepSession> = withContext(Dispatchers.IO) {
         _state.value = HealthConnectSleepState.Checking
 
+        // SDK 상태를 먼저 확인해야 권한 요청이 가능한 기기인지 알 수 있습니다.
         when (HealthConnectClient.getSdkStatus(context)) {
             HealthConnectClient.SDK_UNAVAILABLE -> {
                 _state.value = HealthConnectSleepState.Unavailable
@@ -93,6 +97,7 @@ class HealthConnectSleepDataSource @Inject constructor(
             return@withContext emptyList()
         }
 
+        // MVP에서는 최근 60일 범위만 읽어 추천과 주간 분석에 사용합니다.
         val now = Instant.now()
         val start = now.minus(Duration.ofDays(60))
         val records = try {
@@ -130,6 +135,7 @@ class HealthConnectSleepDataSource @Inject constructor(
         val zoneId = ZoneId.systemDefault()
         val totalMinutes = Duration.between(startTime, endTime).toMinutes().toInt().coerceAtLeast(0)
         val sortedStages = stages.sortedBy { it.startTime }
+        // 단계 정보가 있는 경우 각성/수면 시간을 분리해 점수 보정에 사용합니다.
         val awakeMinutes = sortedStages.sumOf { stage ->
             if (stage.isAwakeStage()) stage.durationMinutes() else 0
         }

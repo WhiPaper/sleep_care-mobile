@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sleepcare.mobile.ui.theme.SleepCareTheme
 
+// Health Connect 권한 요청 전에 왜 수면 읽기 권한이 필요한지 설명하는 Activity입니다.
 class HealthPermissionsRationaleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

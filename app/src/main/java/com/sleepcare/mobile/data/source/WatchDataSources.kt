@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+// Wear OS Data Layer를 통해 모바일 앱과 Galaxy Watch 사이의 세션 제어/심박 메시지를 연결합니다.
+// 수신 메시지는 Flow로 노출하고, 송신은 WatchPaths + WatchProtocolCodec 계약을 그대로 사용합니다.
 @Singleton
 class GalaxyWatchSessionDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -67,6 +69,7 @@ class GalaxyWatchSessionDataSource @Inject constructor(
 
     override suspend fun refreshConnection(): Boolean {
         ensureListenerRegistered()
+        // 가까운 노드를 우선 선택하면 실제 착용 중인 워치가 먼저 연결됩니다.
         val node = runCatching {
             Wearable.getNodeClient(context).connectedNodes.await()
                 .sortedWith(compareByDescending<Node> { it.isNearby }.thenBy { it.displayName })
@@ -124,6 +127,7 @@ class GalaxyWatchSessionDataSource @Inject constructor(
             details = "최근 워치 메시지 수신됨 · ${messageEvent.path}",
             lastSeenAt = LocalDateTime.now(),
         )
+        // 세션 이벤트와 심박 배치는 같은 MessageClient로 들어오므로 path로 구분합니다.
         WatchProtocolCodec.parseSessionEvent(messageEvent.path, messageEvent.data)?.let { event ->
             sessionEvents.tryEmit(event)
             return
@@ -147,6 +151,7 @@ class GalaxyWatchSessionDataSource @Inject constructor(
 
     private suspend fun sendMessage(path: String, payload: ByteArray): Boolean {
         ensureListenerRegistered()
+        // 현재 노드가 없으면 한 번 더 검색해 사용자가 방금 워치를 연결한 경우도 처리합니다.
         val node = currentNode ?: if (refreshConnection()) currentNode else null
         if (node == null) return false
         return runCatching {

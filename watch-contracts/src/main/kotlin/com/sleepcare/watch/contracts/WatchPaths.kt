@@ -1,5 +1,7 @@
 package com.sleepcare.watch.contracts
 
+// Wear OS Data Layer에서 사용하는 경로 상수입니다.
+// 모바일과 워치가 같은 문자열을 써야 하므로 공통 모듈에서만 정의합니다.
 object WatchPaths {
     const val SessionStart = "/sc/v1/ctl/start"
     const val SessionStop = "/sc/v1/ctl/stop"

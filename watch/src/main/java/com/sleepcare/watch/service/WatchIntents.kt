@@ -9,6 +9,7 @@ import com.sleepcare.watch.contracts.WatchProtocolCodec
 import com.sleepcare.watch.contracts.WatchSessionConfig
 import com.sleepcare.watch.contracts.WatchPaths
 
+// WatchSensorTrackingService를 시작할 때 쓰는 Intent action/extra와 payload 변환 헬퍼입니다.
 object WatchSessionIntents {
     const val ACTION_START_SESSION = "com.sleepcare.watch.action.START_SESSION"
     const val ACTION_STOP_SESSION = "com.sleepcare.watch.action.STOP_SESSION"
@@ -32,6 +33,7 @@ object WatchSessionIntents {
 
     fun startSession(context: Context, config: WatchSessionConfig): Intent =
         Intent(context, WatchSensorTrackingService::class.java).apply {
+            // 같은 명령을 raw JSON 없이도 로컬 UI에서 만들 수 있게 주요 값을 extra로 넣습니다.
             action = ACTION_START_SESSION
             putExtra(EXTRA_SESSION_ID, config.sessionId)
             putExtra(EXTRA_STUDY_MODE, config.studyMode)
@@ -44,6 +46,7 @@ object WatchSessionIntents {
 
     fun startSessionFromPhone(context: Context, rawMessage: ByteArray): Intent =
         Intent(context, WatchSensorTrackingService::class.java).apply {
+            // 휴대폰에서 온 Data Layer payload는 원본 byte 배열 그대로 서비스로 넘깁니다.
             action = ACTION_START_SESSION
             putExtra(EXTRA_RAW_MESSAGE, rawMessage)
         }
@@ -122,6 +125,7 @@ object WatchSessionIntents {
     fun decodeEnvelope(intent: Intent): WatchEnvelope? =
         intent.getByteArrayExtra(EXTRA_RAW_MESSAGE)?.let(WatchProtocolCodec::decodeEnvelope)
 
+    // 아래 decode/build 함수들은 서비스가 WatchProtocolCodec을 직접 흩어 쓰지 않도록 모아 둔 어댑터입니다.
     fun decodeConfig(intent: Intent): WatchSessionConfig? =
         intent.getByteArrayExtra(EXTRA_RAW_MESSAGE)?.let(WatchProtocolCodec::decodeSessionConfig)
 
@@ -135,6 +139,7 @@ object WatchSessionIntents {
         intent.getStringExtra(EXTRA_SESSION_ID)
 
     fun startForegroundService(context: Context, intent: Intent) {
+        // Android O 이상에서도 동일하게 동작하도록 ContextCompat 경로를 사용합니다.
         ContextCompat.startForegroundService(context, intent)
     }
 

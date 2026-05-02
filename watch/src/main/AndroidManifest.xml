@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Wear OS 앱으로만 설치되며, 실제 심박 센서가 없어도 개발/테스트 가능하게 optional로 둡니다. -->
     <uses-feature
         android:name="android.hardware.type.watch"
         android:required="true" />
@@ -8,6 +9,7 @@
         android:name="android.hardware.sensor.heartrate"
         android:required="false" />
 
+    <!-- 센서 추적 전면 서비스, 심박 권한, 진동 알림에 필요한 권한입니다. -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -25,6 +27,7 @@
             android:name="com.google.android.wearable.standalone"
             android:value="false" />
 
+        <!-- 워치 런처에서 직접 열리는 Compose Activity입니다. -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -35,6 +38,7 @@
             </intent-filter>
         </activity>
 
+        <!-- 휴대폰 Data Layer 메시지를 받아 추적 서비스로 넘기는 listener입니다. -->
         <service
             android:name=".service.WatchWearableListenerService"
             android:exported="true"
@@ -48,6 +52,7 @@
             </intent-filter>
         </service>
 
+        <!-- 심박 추적을 foreground health service로 유지합니다. -->
         <service
             android:name=".service.WatchSensorTrackingService"
             android:exported="false"

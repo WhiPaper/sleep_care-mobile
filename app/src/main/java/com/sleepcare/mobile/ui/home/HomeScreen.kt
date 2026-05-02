@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+// 홈 화면에 필요한 여러 저장소 값을 한 번에 담는 UI 상태입니다.
 data class HomeUiState(
     val snapshot: HomeDashboardSnapshot = HomeDashboardSnapshot(null, 0, null, null),
     val timelineSegments: List<TimelineSegment> = emptyList(),
@@ -61,6 +62,7 @@ data class HomeUiState(
     val sleepEmptyReason: String = "Health Connect 수면 데이터가 아직 없습니다.",
 )
 
+// 공부 세션 버튼/타이머 표시를 단순화한 상태입니다.
 data class StudySessionUiState(
     val isRunning: Boolean = false,
     val isBusy: Boolean = false,
@@ -68,6 +70,7 @@ data class StudySessionUiState(
     val message: String = "Galaxy Watch와 Raspberry Pi를 연결하면 학습 세션을 시작할 수 있습니다.",
 )
 
+// 앱 첫 탭 화면입니다. 오늘의 공부 세션, 수면 요약, 졸음 빈도, 추천 루틴을 카드로 보여줍니다.
 @Composable
 fun HomeScreen(
     paddingValues: PaddingValues,
@@ -78,6 +81,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val ticker by rememberTickerMillis()
     val latestSleep = uiState.snapshot.latestSleep
+    // 세션 진행 중에는 1초마다 현재 시각을 갱신해 경과 시간을 계산합니다.
     val timerText = uiState.studySession.startedAt?.let { startedAt ->
         val elapsedMillis = (ticker - startedAt.toEpochMillis()).coerceAtLeast(0L)
         elapsedMillis.toTimerText()
@@ -186,6 +190,7 @@ fun HomeScreen(
 }
 
 @HiltViewModel
+// 홈 화면이 필요로 하는 수면/졸음/추천/시험/세션 상태를 하나의 Flow로 합칩니다.
 class HomeViewModel @Inject constructor(
     sleepRepository: SleepRepository,
     drowsinessRepository: DrowsinessRepository,
@@ -202,6 +207,7 @@ class HomeViewModel @Inject constructor(
     ) { sleeps, drowsiness, recommendation, exams, sessionState ->
         val latestSleep = buildLatestHomeSleepSession(sleeps)
         val sleepAvailable = latestSleep != null
+        // 최근 24시간 졸음 횟수만 홈 카드에 노출합니다.
         val recentDrowsinessCount = drowsiness.count { it.timestamp.isAfter(LocalDateTime.now().minusHours(24)) }
         HomeUiState(
             snapshot = HomeDashboardSnapshot(
@@ -246,6 +252,7 @@ class HomeViewModel @Inject constructor(
 }
 
 @Composable
+// 세션 시작/종료를 담당하는 홈의 주요 행동 카드입니다.
 private fun StudySessionCard(
     session: StudySessionUiState,
     timerText: String?,
@@ -290,6 +297,7 @@ private fun StudySessionCard(
 }
 
 @Composable
+// Health Connect 수면 데이터가 없을 때 분석 화면으로 유도하는 카드입니다.
 private fun SleepUnavailableCard(
     message: String,
     onActionClick: () -> Unit,
@@ -304,6 +312,7 @@ private fun SleepUnavailableCard(
 }
 
 @Composable
+// Compose 상태로 주기적인 현재 시각을 제공해 타이머만 자연스럽게 다시 그립니다.
 private fun rememberTickerMillis(intervalMs: Long = 1_000L): State<Long> = produceState(initialValue = System.currentTimeMillis()) {
     while (true) {
         kotlinx.coroutines.delay(intervalMs)
@@ -325,6 +334,7 @@ private fun Long.toTimerText(): String {
     }
 }
 
+// 도메인 세션 단계는 많지만 홈 화면에는 실행 중/대기 중/바쁨 정도만 필요합니다.
 private fun StudySessionState.toUiState(): StudySessionUiState {
     val busyPhases = setOf(
         StudySessionPhase.ArmingWatch,

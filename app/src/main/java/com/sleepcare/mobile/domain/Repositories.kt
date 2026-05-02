@@ -2,10 +2,15 @@ package com.sleepcare.mobile.domain
 
 import kotlinx.coroutines.flow.Flow
 
+// 도메인 계층의 포트(인터페이스) 모음입니다.
+// 화면과 ViewModel은 구현체를 몰라도 이 계약만 보고 데이터를 읽고 명령을 보냅니다.
+
+// Health Connect 같은 외부 수면 데이터 공급원을 추상화합니다.
 interface WatchSleepDataSource {
     suspend fun readRecentSleepSessions(): List<SleepSession>
 }
 
+// 모바일 앱이 Wear OS 워치와 세션/심박 메시지를 주고받는 계약입니다.
 interface WatchSessionDataSource {
     fun observeConnectionState(): Flow<ConnectedDeviceState>
     fun observeHeartRateBatches(): Flow<WatchHeartRateBatch>
@@ -20,6 +25,7 @@ interface WatchSessionDataSource {
     suspend fun disconnect()
 }
 
+// 모바일 앱과 Raspberry Pi의 NSD + WebSocket 통신을 추상화합니다.
 interface PiNetworkDataSource {
     fun observeConnectionState(): Flow<ConnectedDeviceState>
     fun observeRiskState(): Flow<PiRiskUpdate?>
@@ -37,10 +43,12 @@ interface PiNetworkDataSource {
     suspend fun disconnect()
 }
 
+// 수면, 졸음, 공부 계획을 입력받아 취침/기상 추천을 계산합니다.
 interface RecommendationEngine {
     fun generate(input: RecommendationInput): RecommendationSnapshot
 }
 
+// 아래 Repository들은 UI가 로컬 DB, DataStore, 네트워크 세부 구현을 직접 알지 않게 해 줍니다.
 interface SleepRepository {
     fun observeSleepSessions(): Flow<List<SleepSession>>
     suspend fun seedIfEmpty()
@@ -99,7 +107,9 @@ interface SettingsRepository {
     suspend fun resetAppData()
 }
 
+// 점수 계산은 저장소와 화면 테스트에서 재사용되므로 순수 함수로 분리해 둡니다.
 object ScoreCalculator {
+    // 총 수면 시간, 규칙성, 잠들기까지 걸린 시간, 중간 각성을 합쳐 35~100점으로 보정합니다.
     fun sleepQuality(
         totalMinutes: Int,
         consistencyScore: Int,
@@ -113,6 +123,7 @@ object ScoreCalculator {
         return (durationScore + consistencyPart + 25 - latencyPenalty - awakePenalty).coerceIn(35, 100)
     }
 
+    // 최근 졸음 이벤트가 많을수록 감점하고, 충분한 수면이 있으면 약간 보정합니다.
     fun focusScore(
         recentEvents: List<DrowsinessEvent>,
         averageSleepMinutes: Int,

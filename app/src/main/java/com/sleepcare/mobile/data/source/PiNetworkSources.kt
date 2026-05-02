@@ -51,11 +51,14 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
 
+// 아직 워치 수면 데이터 공급원이 없는 경우를 위한 빈 구현입니다.
 @Singleton
 class UnavailableWatchSleepDataSource @Inject constructor() : WatchSleepDataSource {
     override suspend fun readRecentSleepSessions() = emptyList<com.sleepcare.mobile.domain.SleepSession>()
 }
 
+// Android 앱과 Raspberry Pi 서버가 공유하는 JSON 메시지 규칙을 담당합니다.
+// 문자열 파싱 실패가 앱 크래시로 이어지지 않도록 parse 함수들은 null을 반환합니다.
 object PiProtocolCodec {
     private fun emptyBody() = JSONObject().toString()
 
@@ -156,6 +159,7 @@ private fun List<Int>.toJsonArray() = org.json.JSONArray().apply {
     forEach { put(it) }
 }
 
+// Pi로 전달할 심박 품질 문자열을 워치 센서 상태 코드에서 단순화합니다.
 private fun WatchHeartRateSample.toHrQuality(): String {
     val ibiStatusValue = ibiStatus.firstOrNull() ?: -999
     return when {
@@ -167,6 +171,7 @@ private fun WatchHeartRateSample.toHrQuality(): String {
     }
 }
 
+// 로컬 Wi-Fi에서 SleepCare Pi를 찾고 WSS WebSocket으로 실시간 위험도를 받는 데이터소스입니다.
 @Singleton
 class PiNetworkDataSourceImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -203,6 +208,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
     override suspend fun discoverAndConnect(): Boolean = withContext(Dispatchers.IO) {
         if (connectionState.value.status == ConnectionStatus.Connected && webSocket != null) return@withContext true
 
+        // QR 등록으로 저장된 Pi 신뢰 정보가 있어야 NSD 검색과 TLS pin 검증을 시작할 수 있습니다.
         val trustedPi = preferencesStore.trustedPiDevice.first()
         if (trustedPi == null) {
             connectionState.value = connectionState.value.copy(
@@ -212,6 +218,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
             return@withContext false
         }
 
+        // 저장된 deviceId와 serviceType으로 같은 Wi-Fi 안의 등록된 Pi만 찾습니다.
         connectionState.value = connectionState.value.copy(
             status = ConnectionStatus.Scanning,
             details = "등록된 Pi(${trustedPi.deviceId})를 로컬 Wi-Fi에서 찾는 중입니다.",
@@ -236,6 +243,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
     ): Boolean = withContext(Dispatchers.IO) {
         if (!discoverAndConnect()) return@withContext false
 
+        // session.open은 session.ack를 받아야 성공으로 처리합니다.
         val waiter = CompletableDeferred<Boolean>()
         openWaiters[sessionId] = waiter
         val sent = sendEnvelope(
@@ -264,6 +272,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
     override suspend fun sendHeartRateSamples(samples: List<WatchHeartRateSample>): Set<Long> = withContext(Dispatchers.IO) {
         if (samples.isEmpty()) return@withContext emptySet()
         val deliveredSampleSeqs = mutableSetOf<Long>()
+        // sampleSeq 순서대로 보내야 Pi 쪽 버퍼와 ACK 계산이 단순해집니다.
         samples.sortedBy { it.sampleSeq }.forEach { sample ->
             val sent = sendEnvelope(
                 PiProtocolCodec.buildEnvelope(
@@ -337,6 +346,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
         endpoint: PiServiceEndpoint,
         trustedPi: TrustedPiDevice,
     ): Boolean = withContext(Dispatchers.IO) {
+        // QR 페어링 때 저장한 SPKI hash와 서버 인증서를 비교해 등록된 Pi인지 확인합니다.
         val trustManager = SpkiPinningTrustManager(trustedPi.spkiSha256)
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(null, arrayOf(trustManager), SecureRandom())
@@ -362,6 +372,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
         client = okHttpClient
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                // 연결 직후 hello를 보내 Pi가 SleepCare 프로토콜을 지원하는지 확인합니다.
                 sendEnvelope(
                     PiProtocolCodec.buildEnvelope(
                         type = "hello",
@@ -425,6 +436,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
             lastSeenAt = envelope.sentAtMs.toLocalDateTime(),
         )
 
+        // 메시지 타입별로 상태 Flow, 이벤트 Flow, 대기 중인 Deferred를 갱신합니다.
         when (envelope.type) {
             "hello_ack" -> {
                 val ack = PiProtocolCodec.parseHelloAck(envelope)
@@ -472,6 +484,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
     private suspend fun discoverEndpoint(trustedPi: TrustedPiDevice): PiServiceEndpoint? = withContext(Dispatchers.IO) {
         val nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        // Android에서 mDNS/NSD 패킷을 받으려면 Wi-Fi multicast lock이 필요합니다.
         val lock = wifiManager.createMulticastLock("sleepcare-pi-discovery").apply {
             setReferenceCounted(false)
             acquire()
@@ -534,6 +547,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
 
     private fun NsdServiceInfo.toEndpoint(trustedPi: TrustedPiDevice): PiServiceEndpoint? {
         val attributes = attributes.mapValues { (_, value) -> value.decodeToString() }
+        // SleepCare v1 + TLS를 광고하는 서비스만 실제 Pi로 인정합니다.
         if (attributes["proto"] != "v1" || attributes["tls"] != "1") return null
         val deviceId = attributes["device_id"] ?: serviceName ?: return null
         if (deviceId != trustedPi.deviceId) return null
@@ -550,12 +564,14 @@ class PiNetworkDataSourceImpl @Inject constructor(
     }
 }
 
+// JSONObject는 null과 누락을 같은 방식으로 다루지 않으므로, 선택 필드를 명시적으로 nullable로 읽습니다.
 private fun JSONObject.optDoubleOrNull(key: String): Double? =
     takeIf { has(key) && !isNull(key) }?.optDouble(key)
 
 private fun JSONObject.optIntOrNull(key: String): Int? =
     takeIf { has(key) && !isNull(key) }?.optInt(key)
 
+// 등록된 Pi의 공개키 핀만 신뢰해 개발 인증서 파일을 앱에 고정하지 않아도 되게 합니다.
 private class SpkiPinningTrustManager(
     private val expectedSpkiSha256: String,
 ) : X509TrustManager {

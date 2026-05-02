@@ -37,6 +37,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 
+// 앱 첫 실행 경험입니다. 핵심 기능을 소개하고 온보딩 완료 상태를 저장합니다.
 @Composable
 fun OnboardingScreen(
     paddingValues: PaddingValues,
@@ -112,6 +113,7 @@ fun OnboardingScreen(
     }
 }
 
+// 온보딩에서 반복되는 기능 소개 카드입니다.
 @Composable
 private fun OnboardingFeatureCard(
     title: String,
@@ -132,6 +134,7 @@ private fun OnboardingFeatureCard(
 }
 
 @HiltViewModel
+// 온보딩 완료 플래그만 저장하는 작은 ViewModel입니다.
 class OnboardingViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {

@@ -20,6 +20,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
+// 워치에서 전면 서비스로 센서 추적을 수행하는 핵심 런타임입니다.
+// 휴대폰 명령 Intent를 받아 세션을 시작/종료하고, 심박 샘플을 휴대폰으로 보냅니다.
 class WatchSensorTrackingService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val buffer = WatchSampleBuffer()
@@ -35,6 +37,7 @@ class WatchSensorTrackingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // WearableListenerService나 워치 UI에서 보낸 action을 세션 동작으로 분기합니다.
         when (intent?.action) {
             WatchSessionIntents.ACTION_START_SESSION -> handleStart(intent)
             WatchSessionIntents.ACTION_STOP_SESSION -> handleStop(intent)
@@ -72,6 +75,7 @@ class WatchSensorTrackingService : Service() {
             return
         }
 
+        // 센서 수집은 백그라운드 제한을 피하기 위해 foreground service로 유지합니다.
         startForeground(
             WatchNotification.NOTIFICATION_ID,
             WatchNotification.build(
@@ -112,6 +116,7 @@ class WatchSensorTrackingService : Service() {
         val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId ?: return
         val fromSampleSeq = resolveBackfillFrom(intent) ?: return
         serviceScope.launch {
+            // 휴대폰이 누락을 감지한 sampleSeq부터 버퍼에 남은 샘플을 배치로 다시 보냅니다.
             val samples = buffer.fromSequence(sessionId, fromSampleSeq)
             if (samples.isEmpty()) return@launch
             val batch = WatchHeartRateBatch(
@@ -152,6 +157,7 @@ class WatchSensorTrackingService : Service() {
             }
         }
 
+        // 센서 백엔드가 시작되지 못하면 즉시 휴대폰에 recoverable 오류를 알립니다.
         if (!startResult.started) {
             sendSessionError(
                 sessionId = config.sessionId,
@@ -184,6 +190,7 @@ class WatchSensorTrackingService : Service() {
         backend.stop()
         if (sessionId != null) {
             if (notifyPhone) {
+                // 정상 종료일 때는 마지막 sampleSeq를 함께 보내 모바일 커서 정리를 돕습니다.
                 messenger.send(
                     WatchPaths.SessionClosed,
                     WatchSessionIntents.buildSessionClosedPayload(
@@ -205,6 +212,7 @@ class WatchSensorTrackingService : Service() {
     private suspend fun onSample(sample: WatchHeartRateSample) {
         buffer.append(sample)
         WatchSessionStore.updateHeartRate(sample)
+        // MVP에서는 실시간 live 샘플을 우선 전송하고, 누락 시 backfill로 보완합니다.
         messenger.send(WatchPaths.HrLive, WatchSessionIntents.buildLiveSamplePayload(sample))
     }
 
@@ -221,6 +229,7 @@ class WatchSensorTrackingService : Service() {
     }
 
     private fun resolveConfig(intent: Intent): WatchSessionConfig? {
+        // 휴대폰에서 온 raw JSON payload를 우선 해석하고, 없으면 로컬 extra 값으로 구성합니다.
         WatchSessionIntents.decodeConfig(intent)?.let { return it }
         val sessionId = intent.getStringExtra(WatchSessionIntents.EXTRA_SESSION_ID) ?: return null
         val flushPolicy = resolveFlushPolicy(intent) ?: WatchFlushPolicy()
@@ -257,6 +266,7 @@ class WatchSensorTrackingService : Service() {
 
     private fun vibrate(level: Int, pattern: String) {
         val vibrator = ContextCompat.getSystemService(this, Vibrator::class.java) ?: return
+        // Pi 위험도 level과 pattern을 단순 진동 길이로 매핑합니다.
         val durationMs = when (pattern) {
             "pulse" -> 500L
             "urgent" -> 900L
@@ -277,6 +287,7 @@ class WatchSensorTrackingService : Service() {
     }
 
     companion object {
+        // 아래 헬퍼들은 외부 클래스가 action/extra를 직접 알지 않고 서비스를 시작하게 해 줍니다.
         fun start(context: Context, config: WatchSessionConfig) {
             WatchSessionIntents.startForegroundService(context, WatchSessionIntents.startSession(context, config))
         }

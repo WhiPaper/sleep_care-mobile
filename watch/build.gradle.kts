@@ -4,6 +4,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Wear OS 워치 앱 모듈입니다.
+// 휴대폰 명령을 받아 전면 서비스로 심박 추적을 수행하고 Data Layer로 샘플을 보냅니다.
 android {
     namespace = "com.sleepcare.watch"
     compileSdk = 36
@@ -49,7 +51,9 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
 
+    // 모바일 앱과 같은 워치 메시지 경로/모델/코덱을 사용합니다.
     implementation(project(":watch-contracts"))
+    // 실제 센서 SDK AAR을 libs 폴더에 넣으면 이 모듈에서 함께 패키징됩니다.
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
 
     implementation(composeBom)

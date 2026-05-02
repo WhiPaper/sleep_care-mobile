@@ -42,9 +42,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+// Hilt가 앱 전체에서 쓸 싱글턴 객체와 구현체 바인딩을 만드는 곳입니다.
+// 화면/저장소는 생성 방법을 몰라도 생성자 주입으로 필요한 의존성을 받을 수 있습니다.
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppProvidesModule {
+    // Room 데이터베이스는 앱 생명주기 전체에서 하나만 유지합니다.
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SleepCareDatabase =
@@ -87,6 +91,7 @@ object AppProvidesModule {
         @ApplicationContext context: Context,
     ): WatchSessionDataSource = GalaxyWatchSessionDataSource(context)
 
+    // Pi 통신은 Android NSD와 WSS 연결을 직접 다루므로 Context를 받아 생성합니다.
     @Provides
     @Singleton
     fun providePiNetworkDataSource(
@@ -95,6 +100,7 @@ object AppProvidesModule {
     ): PiNetworkDataSource = PiNetworkDataSourceImpl(context, preferencesStore)
 }
 
+// 인터페이스를 실제 구현체에 연결하는 바인딩 모듈입니다.
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class AppBindsModule {

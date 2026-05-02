@@ -74,6 +74,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
+// 앱의 실제 저장소 구현과 추천/분석 계산 함수를 모은 파일입니다.
+// ViewModel은 아래 Repository 인터페이스만 보지만, 이 파일이 DB·DataStore·기기 통신을 이어 줍니다.
+
+// Health Connect 수면 데이터를 로컬 DB 캐시로 동기화합니다.
 @Singleton
 class SleepRepositoryImpl @Inject constructor(
     private val sleepSessionDao: SleepSessionDao,
@@ -90,6 +94,7 @@ class SleepRepositoryImpl @Inject constructor(
     override suspend fun refreshFromSource() {
         val sessions = sleepDataSource.readRecentSleepSessions()
         if (sessions.isNotEmpty()) {
+            // Health Connect를 현재의 진실한 원본으로 보고 전체 캐시를 최신 목록으로 교체합니다.
             sleepSessionDao.clear()
             sleepSessionDao.upsertAll(sessions.map { it.toEntity() })
             val current = preferencesStore.lastSyncState.first()
@@ -100,6 +105,7 @@ class SleepRepositoryImpl @Inject constructor(
     }
 }
 
+// Raspberry Pi에서 들어오는 alert.fire 이벤트를 졸음 이벤트 테이블에 계속 누적합니다.
 @Singleton
 class DrowsinessRepositoryImpl @Inject constructor(
     private val drowsinessEventDao: DrowsinessEventDao,
@@ -109,6 +115,7 @@ class DrowsinessRepositoryImpl @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
+        // 앱이 살아 있는 동안 Pi 알림 Flow를 구독해 분석 화면 데이터로 변환합니다.
         scope.launch {
             piNetworkDataSource.observeAlerts().collect { alert ->
                 drowsinessEventDao.upsertAll(listOf(alert.toEvent().toEntity()))
@@ -126,6 +133,7 @@ class DrowsinessRepositoryImpl @Inject constructor(
     override suspend fun refreshFromSource() = Unit
 }
 
+// 공부 계획은 한 개의 기본 플랜을 유지하고, 없으면 MVP 기본값을 심어 줍니다.
 @Singleton
 class StudyPlanRepositoryImpl @Inject constructor(
     private val studyPlanDao: StudyPlanDao,
@@ -159,6 +167,7 @@ class StudyPlanRepositoryImpl @Inject constructor(
     }
 }
 
+// 시험 일정은 추천 기상 시각 계산에서 가까운 시험을 찾는 입력으로 쓰입니다.
 @Singleton
 class ExamScheduleRepositoryImpl @Inject constructor(
     private val examScheduleDao: ExamScheduleDao,
@@ -202,6 +211,7 @@ class ExamScheduleRepositoryImpl @Inject constructor(
     }
 }
 
+// 여러 저장소의 현재 값을 모아 추천 엔진에 넣고, 결과 스냅샷을 저장합니다.
 @Singleton
 class RecommendationRepositoryImpl @Inject constructor(
     private val recommendationSnapshotDao: RecommendationSnapshotDao,
@@ -229,6 +239,7 @@ class RecommendationRepositoryImpl @Inject constructor(
     }
 }
 
+// 기기 연결 화면이 Pi와 Watch 상태를 하나의 리스트로 볼 수 있게 합칩니다.
 @Singleton
 class DeviceConnectionRepositoryImpl @Inject constructor(
     private val piNetworkDataSource: PiNetworkDataSource,
@@ -275,6 +286,8 @@ class DeviceConnectionRepositoryImpl @Inject constructor(
     }
 }
 
+// 공부 세션의 오케스트레이터입니다.
+// 워치 센서 시작, Pi 세션 열기, 심박 샘플 릴레이, 알림 진동, 세션 요약 저장을 한곳에서 조율합니다.
 @Singleton
 class StudySessionRepositoryImpl @Inject constructor(
     private val studySessionDao: StudySessionDao,
@@ -290,6 +303,7 @@ class StudySessionRepositoryImpl @Inject constructor(
 
     init {
         scope.launch {
+            // 워치 심박 배치는 먼저 로컬에 저장하고, 새 샘플만 Pi로 전달합니다.
             watchSessionDataSource.observeHeartRateBatches().collect { batch ->
                 val result = watchRelayStore.recordIncomingBatch(batch)
                 val deliveredSampleSeqs = piNetworkDataSource.sendHeartRateSamples(result.newSamples)
@@ -304,6 +318,7 @@ class StudySessionRepositoryImpl @Inject constructor(
             }
         }
         scope.launch {
+            // 워치 세션 준비/오류/종료 이벤트는 현재 세션과 일치할 때만 UI 상태에 반영합니다.
             watchSessionDataSource.observeSessionEvents().collect { event ->
                 when (event) {
                     is WatchSessionReady -> {
@@ -336,6 +351,7 @@ class StudySessionRepositoryImpl @Inject constructor(
             }
         }
         scope.launch {
+            // Pi가 재연결되면 이전에 못 보낸 pending 심박 샘플을 다시 밀어 넣습니다.
             piNetworkDataSource.observeConnectionState().collect { state ->
                 if (state.status != ConnectionStatus.Connected) return@collect
                 watchRelayStore.getPendingSessionIds().forEach { sessionId ->
@@ -349,6 +365,7 @@ class StudySessionRepositoryImpl @Inject constructor(
             }
         }
         scope.launch {
+            // Pi 위험도가 올라가면 UI 상태와 워치 전송 주기를 같이 갱신합니다.
             piNetworkDataSource.observeRiskState().collect { risk ->
                 if (risk == null) return@collect
                 if (risk.sessionId == sessionState.value.sessionId && risk.recommendedFlushSec != null) {
@@ -377,6 +394,7 @@ class StudySessionRepositoryImpl @Inject constructor(
             }
         }
         scope.launch {
+            // alert.fire는 워치 진동으로 즉시 전달하고 세션별 알림 횟수를 누적합니다.
             piNetworkDataSource.observeAlerts().collect { alert ->
                 watchSessionDataSource.sendVibrationAlert(
                     sessionId = alert.sessionId,
@@ -396,6 +414,7 @@ class StudySessionRepositoryImpl @Inject constructor(
             }
         }
         scope.launch {
+            // Pi의 session.summary가 최종 종료 기록이므로 로컬 세션 행을 마감합니다.
             piNetworkDataSource.observeSessionSummaries().collect { summary ->
                 persistSummary(summary)
                 alertCounts.remove(summary.sessionId)
@@ -411,6 +430,7 @@ class StudySessionRepositoryImpl @Inject constructor(
 
     override suspend fun startSession() {
         val current = sessionState.value
+        // 이미 시작/종료 진행 중인 세션이 있으면 중복 시작을 막습니다.
         if (current.phase in listOf(
                 StudySessionPhase.ArmingWatch,
                 StudySessionPhase.DiscoveringPi,
@@ -445,6 +465,7 @@ class StudySessionRepositoryImpl @Inject constructor(
             return
         }
 
+        // 워치가 실제 센서 세션을 준비했다는 ready 응답을 기다린 뒤 Pi 세션을 엽니다.
         val watchStarted = watchSessionDataSource.startSession(WatchSessionConfig(sessionId = sessionId))
         if (!watchStarted) {
             sessionState.value = StudySessionState(
@@ -510,6 +531,7 @@ class StudySessionRepositoryImpl @Inject constructor(
         )
         persistCurrentState()
 
+        // Pi 연결 실패 시 워치 세션도 함께 닫아 양쪽 상태가 엇갈리지 않게 합니다.
         val connected = piNetworkDataSource.discoverAndConnect()
         if (!connected) {
             watchSessionDataSource.stopSession(sessionId)
@@ -582,6 +604,7 @@ class StudySessionRepositoryImpl @Inject constructor(
         val sessionId = current.sessionId ?: return
         val existing = studySessionDao.getById(sessionId)
         val alertCount = alertCounts[sessionId] ?: existing?.alertCount ?: 0
+        // 부분 업데이트가 자주 일어나므로 기존 값과 새 값을 합쳐 한 행으로 덮어씁니다.
         studySessionDao.upsert(
             com.sleepcare.mobile.data.local.StudySessionEntity(
                 id = sessionId,
@@ -617,6 +640,7 @@ class StudySessionRepositoryImpl @Inject constructor(
     }
 }
 
+// DataStore 설정과 Room 데이터를 묶어 설정 화면의 저장/초기화를 담당합니다.
 @Singleton
 class SettingsRepositoryImpl @Inject constructor(
     private val preferencesStore: PreferencesStore,
@@ -652,6 +676,8 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 }
 
+// 규칙 기반 추천 엔진입니다.
+// 최근 수면, 졸음 이벤트, 시험 일정, 사용자 목표를 조합해 권장 취침/기상 시간을 만듭니다.
 @Singleton
 class SleepCareRecommendationEngine @Inject constructor() : RecommendationEngine {
     override fun generate(input: RecommendationInput): RecommendationSnapshot {
@@ -662,11 +688,13 @@ class SleepCareRecommendationEngine @Inject constructor() : RecommendationEngine
         val needsExtraRecovery = (averageSleepMinutes != null && averageSleepMinutes < 390) || recentDrowsiness.size >= 3
         val targetSleepMinutes = if (needsExtraRecovery) 480 else 450
 
+        // 2주 안의 가장 가까운 시험은 목표 기상 시각을 앞당기는 가장 강한 신호로 봅니다.
         val examWakeCandidate = input.exams
             .filter { !it.date.isBefore(generatedAt.toLocalDate()) && !it.date.isAfter(generatedAt.toLocalDate().plusDays(14)) }
             .minWithOrNull(compareBy<ExamSchedule> { it.date }.thenBy { it.startTime })
             ?.let { it.startTime.minusMinutes(90) }
 
+        // 명시 목표가 없으면 공부 시작 90분 전, 그것도 없으면 06:30을 기본 기상 시각으로 둡니다.
         val baselineWakeTime = examWakeCandidate
             ?: input.userGoals.targetWakeTime
             ?: input.studyPlan?.startTime?.minusMinutes(90)
@@ -737,6 +765,7 @@ class SleepCareRecommendationEngine @Inject constructor() : RecommendationEngine
     }
 }
 
+// 수면 세션 목록을 화면 지표로 바꾸는 순수 계산 함수입니다.
 fun buildSleepAnalysisSnapshot(sessions: List<com.sleepcare.mobile.domain.SleepSession>): SleepAnalysisSnapshot {
     val recent = buildWeeklySleepDaySummaries(sessions).take(7)
     if (recent.isEmpty()) {
@@ -771,6 +800,7 @@ fun buildSleepAnalysisSnapshot(sessions: List<com.sleepcare.mobile.domain.SleepS
     )
 }
 
+// 홈 화면은 최신 밤의 총 수면 시간을 한 장의 대표 세션처럼 보여줍니다.
 fun buildLatestHomeSleepSession(
     sessions: List<com.sleepcare.mobile.domain.SleepSession>,
 ): com.sleepcare.mobile.domain.SleepSession? {
@@ -788,6 +818,7 @@ fun buildLatestHomeSleepSession(
     )
 }
 
+// 같은 밤에 끊겨 기록된 수면을 합치고 하루 단위 요약으로 변환합니다.
 fun buildWeeklySleepDaySummaries(
     sessions: List<com.sleepcare.mobile.domain.SleepSession>,
 ): List<com.sleepcare.mobile.domain.SleepDaySummary> =
@@ -818,6 +849,7 @@ fun calculateSleepRegularityScore(
     if (days.isEmpty()) return 0
     if (days.size == 1) return 85
 
+    // 자정 전후 취침/기상 시간을 같은 축 위에 놓기 위해 분 단위로 정규화합니다.
     val bedtimeMinutes = days.map { it.primarySession.startTime.toRegularityBedtimeMinutes() }
     val wakeMinutes = days.map { it.primarySession.endTime.toRegularityWakeMinutes() }
     val averageBedtime = bedtimeMinutes.average()
@@ -841,6 +873,7 @@ private fun mergeNearbyNightSleepSessions(
 
     for (next in sorted.drop(1)) {
         val gap = Duration.between(current.endTime, next.startTime)
+        // Health Connect가 짧은 각성으로 밤잠을 둘로 나누는 경우를 한 세션으로 복원합니다.
         val canMerge = !gap.isNegative &&
             gap <= Duration.ofHours(3) &&
             (current.isNightLikeSleep() || next.isNightLikeSleep())
@@ -909,6 +942,7 @@ fun buildDrowsinessAnalysisSnapshot(
     sessions: List<com.sleepcare.mobile.domain.SleepSession>,
     liveRisk: PiRiskUpdate? = null,
 ): DrowsinessAnalysisSnapshot {
+    // 최근 이벤트만 리스트로 보여주되, 피크 시간대는 전체 이벤트 분포에서 계산합니다.
     val recent = events.sortedByDescending { it.timestamp }.take(8)
     val grouped = events.groupBy { it.timestamp.hour }
     val peakHour = grouped.maxByOrNull { (_, value) -> value.size }?.key

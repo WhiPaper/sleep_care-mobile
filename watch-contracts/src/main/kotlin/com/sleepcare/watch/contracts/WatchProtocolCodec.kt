@@ -7,7 +7,10 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
+// 모바일 앱과 워치 앱 사이의 JSON payload 인코딩/디코딩을 담당합니다.
+// path는 WatchPaths, body 구조는 이 Codec이 책임져 양쪽 구현을 단순하게 유지합니다.
 object WatchProtocolCodec {
+    // 외부에서 쓰기 쉬운 build* 함수들은 내부 encode* 함수의 의미 있는 별칭입니다.
     fun buildStartPayload(config: WatchSessionConfig): ByteArray = encodeSessionStart(config)
 
     fun buildStopPayload(sessionId: String): ByteArray = encodeSessionStop(sessionId)
@@ -230,6 +233,7 @@ object WatchProtocolCodec {
         )
 
     fun decodeEnvelope(raw: ByteArray): WatchEnvelope? = runCatching {
+        // 잘못된 메시지가 들어와도 워치/앱 프로세스가 죽지 않도록 null로 흘려보냅니다.
         val root = JSONObject(String(raw, UTF_8))
         WatchEnvelope(
             version = root.optInt("v", 1),
@@ -278,6 +282,7 @@ object WatchProtocolCodec {
     fun decodeHeartRateBatch(raw: ByteArray): WatchHeartRateBatch? {
         val envelope = decodeEnvelope(raw) ?: return null
         val sessionId = envelope.sessionId ?: return null
+        // live 단일 샘플과 batch 배열을 같은 WatchHeartRateBatch 타입으로 정규화합니다.
         val samples = when (envelope.type) {
             "hr.live" -> listOf(envelope.body.toSample(sessionId, envelope.sequence))
             else -> envelope.body.optJSONArray("samples")?.toSampleList(sessionId, envelope.sequence).orEmpty()
@@ -336,6 +341,7 @@ object WatchProtocolCodec {
     fun parseSessionEvent(path: String, raw: ByteArray): WatchSessionEvent? {
         val envelope = decodeEnvelope(raw) ?: return null
         val sessionId = envelope.sessionId ?: return null
+        // 같은 JSON envelope라도 Data Layer path에 따라 세션 이벤트 타입을 확정합니다.
         return when (path) {
             WatchPaths.SessionReady -> WatchSessionReady(
                 sessionId = sessionId,
@@ -372,6 +378,7 @@ object WatchProtocolCodec {
     }
 
     private fun encode(envelope: WatchEnvelope): ByteArray =
+        // JSONObject.NULL을 명시해야 nullable sessionId도 JSON 필드 구조를 유지합니다.
         JSONObject()
             .put("v", envelope.version)
             .put("t", envelope.type)
@@ -415,6 +422,7 @@ object WatchProtocolCodec {
 
     private fun JSONArray.toSampleList(sessionId: String, messageSequence: Long): List<WatchHeartRateSample> {
         val samples = mutableListOf<WatchHeartRateSample>()
+        // 일부 항목이 깨져 있어도 정상 샘플은 가능한 한 살려서 전달합니다.
         for (index in 0 until length()) {
             val payload = optJSONObject(index) ?: continue
             samples += payload.toSample(sessionId, messageSequence)

@@ -73,6 +73,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
+// 분석 탭이 사용하는 수면/졸음 지표와 Health Connect 안내 문구를 묶은 UI 상태입니다.
 data class AnalysisUiState(
     val sleep: SleepAnalysisSnapshot = SleepAnalysisSnapshot(0, 0, 0, 0, 0, emptyList()),
     val drowsiness: DrowsinessAnalysisSnapshot = DrowsinessAnalysisSnapshot(0, "대기 중", 0, emptyList()),
@@ -81,6 +82,7 @@ data class AnalysisUiState(
     val weeklySleepDays: List<SleepDaySummary> = emptyList(),
 )
 
+// 분석 탭의 허브 화면입니다. 상세 화면으로 들어가기 전 핵심 지표만 요약합니다.
 @Composable
 fun AnalysisHubScreen(
     paddingValues: PaddingValues,
@@ -135,6 +137,7 @@ fun AnalysisHubScreen(
     }
 }
 
+// 수면 상세 화면입니다. Health Connect 데이터가 있을 때만 세부 지표와 주간 리듬을 보여줍니다.
 @Composable
 fun SleepAnalysisDetailScreen(
     paddingValues: PaddingValues,
@@ -221,6 +224,7 @@ fun SleepAnalysisDetailScreen(
     }
 }
 
+// 졸음 상세 화면입니다. Pi에서 기록한 이벤트와 현재 liveRisk를 기반으로 포커스 상태를 보여줍니다.
 @Composable
 fun DrowsinessAnalysisDetailScreen(
     paddingValues: PaddingValues,
@@ -261,6 +265,7 @@ fun DrowsinessAnalysisDetailScreen(
     }
 }
 
+// 상세 화면에서 공통으로 쓰는 뒤로가기 헤더입니다.
 @Composable
 private fun DetailHeader(title: String, onBack: () -> Unit) {
     Row(
@@ -276,6 +281,7 @@ private fun DetailHeader(title: String, onBack: () -> Unit) {
 }
 
 @HiltViewModel
+// 수면 DB, 졸음 이벤트, 실시간 세션 상태, Health Connect 상태를 합쳐 분석 화면 데이터를 만듭니다.
 class AnalysisViewModel @Inject constructor(
     sleepRepository: SleepRepository,
     drowsinessRepository: DrowsinessRepository,
@@ -308,6 +314,7 @@ class AnalysisViewModel @Inject constructor(
     )
 }
 
+// 수면 데이터가 비어 있을 때도 사용자가 이유와 다음 행동을 알 수 있게 하는 공통 안내 카드입니다.
 @Composable
 private fun SleepUnavailableCallout(
     message: String,
@@ -323,6 +330,7 @@ private fun SleepUnavailableCallout(
     )
 }
 
+// 최근 7일 수면 점수와 가장 최근 세션 요약을 크게 보여주는 상단 카드입니다.
 @Composable
 private fun SleepAnalysisHero(
     sleep: SleepAnalysisSnapshot,
@@ -395,6 +403,7 @@ private fun SleepAnalysisHero(
     }
 }
 
+// 평균 수면과 중간 각성 비율을 간단한 막대 구조로 표현합니다.
 @Composable
 private fun LatestSleepStructureCard(
     sleep: SleepAnalysisSnapshot,
@@ -454,6 +463,7 @@ private fun LatestSleepStructureCard(
     }
 }
 
+// 수면 상세 지표를 2열 카드와 강조 카드로 배치합니다.
 @Composable
 private fun SleepMetricGrid(
     sleep: SleepAnalysisSnapshot,
@@ -495,6 +505,7 @@ private fun SleepMetricGrid(
     }
 }
 
+// 하나의 수면 지표 타일입니다. 강조 여부에 따라 색상 체계를 바꿉니다.
 @Composable
 private fun SleepMetricTile(
     title: String,
@@ -558,6 +569,7 @@ private fun SleepMetricTile(
     }
 }
 
+// 최근 날짜별 수면 시작/종료 위치를 세로 막대 차트로 보여줍니다.
 @Composable
 private fun WeeklySleepRhythmCard(
     days: List<SleepDaySummary>,
@@ -609,6 +621,7 @@ private fun WeeklySleepRhythmCard(
     }
 }
 
+// 하루 수면을 18:00~다음날 12:00 범위 안의 위치와 길이로 렌더링합니다.
 @Composable
 private fun WeeklySleepRhythmDay(
     day: SleepDaySummary,
@@ -693,6 +706,7 @@ private fun WeeklySleepRhythmDay(
     }
 }
 
+// 지표 조합에 따라 사용자에게 보여줄 수면 루틴 설명을 만듭니다.
 private fun buildSleepRoutineInsight(
     sleep: SleepAnalysisSnapshot,
     latestSleep: SleepSession?,
@@ -714,6 +728,7 @@ private fun formatSessionWindow(session: SleepSession): String =
 private fun formatClock(dateTime: java.time.LocalDateTime): String =
     dateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
 
+// 수면/각성 구성 요소를 범례와 함께 보여주는 작은 막대입니다.
 @Composable
 private fun WeeklyBreakdownBar(
     segments: List<TimelineSegment>,
@@ -767,6 +782,7 @@ private fun WeeklyBreakdownBar(
     }
 }
 
+// 야간 수면 시작 시각을 차트 높이의 0~1 위치로 변환합니다.
 private fun SleepSession.sleepWindowStartFraction(): Float {
     val windowStartMinutes = 18 * 60
     val totalWindowMinutes = 18 * 60f
@@ -775,6 +791,7 @@ private fun SleepSession.sleepWindowStartFraction(): Float {
     return ((normalized - windowStartMinutes) / totalWindowMinutes).coerceIn(0f, 0.92f)
 }
 
+// 총 수면 시간을 차트 막대 높이의 0~1 비율로 변환합니다.
 private fun SleepSession.sleepWindowDurationFraction(): Float {
     val totalWindowMinutes = 18 * 60f
     val duration = totalMinutes.coerceAtLeast(45)
@@ -791,6 +808,7 @@ private fun java.time.DayOfWeek.toKoreanShortLabel(): String = when (this) {
     java.time.DayOfWeek.SUNDAY -> "일"
 }
 
+// Health Connect 상태를 사용자가 이해할 수 있는 분석 화면 문구로 바꿉니다.
 private fun HealthConnectSleepState.toAnalysisCopy(sleepAvailable: Boolean): String = when {
     sleepAvailable -> "최근 Health Connect 수면 데이터를 불러왔습니다."
     this is HealthConnectSleepState.PermissionDenied -> "Health Connect 수면 권한이 없어 최근 수면 기록을 읽지 못했습니다."

@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+// 앱 전체에 적용되는 Material 3 다크 컬러 스킴입니다.
 private val SleepCareColorScheme = darkColorScheme(
     primary = SleepCarePrimary,
     onPrimary = SleepCareOnPrimary,
@@ -45,6 +46,7 @@ private val SleepCareColorScheme = darkColorScheme(
     scrim = Color.Black
 )
 
+// 카드와 버튼의 둥근 정도를 한곳에서 관리합니다.
 val SleepCareShapes = Shapes(
     extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
     small = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
@@ -54,6 +56,7 @@ val SleepCareShapes = Shapes(
 )
 
 @Composable
+// Sleep Care 모바일 앱의 최상위 테마 래퍼입니다.
 fun SleepCareTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit

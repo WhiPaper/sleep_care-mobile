@@ -1,23 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Health Connect 앱 설치/상태를 조회하기 위해 패키지 visibility를 선언합니다. -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
     </queries>
 
+    <!-- 워치 연결, Pi 네트워크 검색/WSS, Health Connect 수면 읽기에 필요한 권한입니다. -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
 
+    <!-- Hilt Application과 모바일 앱/Health Connect 권한 안내 Activity를 등록합니다. -->
     <application
         android:name=".SleepCareApplication"
         android:allowBackup="true"
@@ -38,6 +41,7 @@
             </intent-filter>
         </activity>
 
+        <!-- Android 13 이하 Health Connect 온보딩 진입점입니다. -->
         <activity
             android:name=".health.HealthConnectOnboardingActivity"
             android:exported="true"
@@ -48,6 +52,7 @@
             </intent-filter>
         </activity>
 
+        <!-- Android 14 이상 Health Connect 온보딩 진입점은 alias로 같은 화면에 연결합니다. -->
         <activity-alias
             android:name=".health.UAndAboveOnboardingActivity"
             android:exported="true"
@@ -58,6 +63,7 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- Health Connect 권한 사용 이유를 설명하는 화면입니다. -->
         <activity
             android:name=".health.HealthPermissionsRationaleActivity"
             android:exported="true"
@@ -67,6 +73,7 @@
             </intent-filter>
         </activity>
 
+        <!-- 시스템 권한 사용 내역 화면에서 열 수 있는 Health 권한 설명 alias입니다. -->
         <activity-alias
             android:name=".health.ViewPermissionUsageActivity"
             android:exported="true"

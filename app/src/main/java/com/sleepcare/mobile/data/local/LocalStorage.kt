@@ -43,8 +43,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
+// Room DB와 DataStore를 함께 정의하는 로컬 저장소 파일입니다.
+// 구조화된 기록은 Room에, 작은 설정값은 DataStore Preferences에 저장합니다.
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "sleep_care_preferences")
 
+// Health Connect에서 읽은 수면 세션을 앱 분석용으로 캐시합니다.
 @Entity(tableName = "sleep_sessions")
 data class SleepSessionEntity(
     @PrimaryKey val id: String,
@@ -58,6 +62,7 @@ data class SleepSessionEntity(
     val source: String,
 )
 
+// Raspberry Pi 알림을 졸음 이벤트로 변환해 저장합니다.
 @Entity(tableName = "drowsiness_events")
 data class DrowsinessEventEntity(
     @PrimaryKey val id: String,
@@ -69,6 +74,7 @@ data class DrowsinessEventEntity(
     val sessionId: String?,
 )
 
+// 공부 세션의 시작/종료와 최종 요약을 남기는 테이블입니다.
 @Entity(tableName = "study_sessions")
 data class StudySessionEntity(
     @PrimaryKey val id: String,
@@ -83,6 +89,7 @@ data class StudySessionEntity(
     val peakFusedScore: Double?,
 )
 
+// 워치 심박 샘플은 Pi로 전달 성공 여부까지 함께 추적합니다.
 @Entity(tableName = "watch_hr_samples")
 data class WatchHeartRateSampleEntity(
     @PrimaryKey val id: String,
@@ -99,6 +106,7 @@ data class WatchHeartRateSampleEntity(
     val relayState: String,
 )
 
+// 워치로 보낸 ACK 커서를 저장해 중복/누락 샘플을 이어서 처리합니다.
 @Entity(tableName = "watch_cursors")
 data class WatchCursorEntity(
     @PrimaryKey val sessionId: String,
@@ -107,6 +115,7 @@ data class WatchCursorEntity(
     val lastAckSentAt: LocalDateTime?,
 )
 
+// 사용자가 설정한 기본 공부 계획은 단일 행으로 관리합니다.
 @Entity(tableName = "study_plan")
 data class StudyPlanEntity(
     @PrimaryKey val id: Int = StudyPlan.DEFAULT_ID,
@@ -118,6 +127,7 @@ data class StudyPlanEntity(
     val autoBreakEnabled: Boolean,
 )
 
+// 시험 일정은 여러 건을 날짜순으로 보여주고 추천 계산에도 사용합니다.
 @Entity(tableName = "exam_schedule")
 data class ExamScheduleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
@@ -130,6 +140,7 @@ data class ExamScheduleEntity(
     val syncEnabled: Boolean,
 )
 
+// 추천 결과는 최신 스냅샷 하나만 보관합니다.
 @Entity(tableName = "recommendation_snapshot")
 data class RecommendationSnapshotEntity(
     @PrimaryKey val id: Long = 1L,
@@ -142,6 +153,7 @@ data class RecommendationSnapshotEntity(
     val generatedAt: LocalDateTime,
 )
 
+// Room이 java.time 타입을 문자열로 저장하고 다시 복원할 수 있게 하는 변환기입니다.
 class RoomConverters {
     @TypeConverter
     fun localDateTimeToString(value: LocalDateTime?): String? = value?.toString()
@@ -162,6 +174,7 @@ class RoomConverters {
     fun stringToLocalTime(value: String?): LocalTime? = value?.let(LocalTime::parse)
 }
 
+// 아래 DAO들은 화면이 직접 SQL을 알 필요 없이 Flow와 suspend 함수로 데이터에 접근하게 해 줍니다.
 @Dao
 interface SleepSessionDao {
     @Query("SELECT * FROM sleep_sessions ORDER BY startTime DESC")
@@ -282,6 +295,7 @@ interface RecommendationSnapshotDao {
     suspend fun clear()
 }
 
+// 앱에서 사용하는 모든 Room 테이블을 묶은 데이터베이스입니다.
 @Database(
     entities = [
         SleepSessionEntity::class,
@@ -308,6 +322,7 @@ abstract class SleepCareDatabase : RoomDatabase() {
     abstract fun recommendationSnapshotDao(): RecommendationSnapshotDao
 }
 
+// DataStore Preferences로 온보딩, 알림 설정, 사용자 목표, 마지막 동기화 시간을 관리합니다.
 class PreferencesStore(private val context: Context) {
     private object Keys {
         val onboardingCompleted = booleanPreferencesKey("onboarding_completed")
@@ -408,10 +423,12 @@ class PreferencesStore(private val context: Context) {
     }
 }
 
+// DataStore 읽기 중 IOException이 나면 앱이 죽지 않도록 빈 Preferences로 대체합니다.
 private fun DataStore<Preferences>.safeData(): Flow<Preferences> = data.catch { exception ->
     if (exception is IOException) emit(emptyPreferences()) else throw exception
 }
 
+// 아래 변환 함수들은 DB Entity와 도메인 모델 사이의 경계를 명확히 유지합니다.
 fun SleepSessionEntity.toDomain(): SleepSession = SleepSession(
     id = id,
     startTime = startTime,

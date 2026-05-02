@@ -2,6 +2,9 @@ package com.sleepcare.mobile.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// 모바일 앱 전용 다크 컬러 토큰입니다.
+// Material 3 ColorScheme과 공통 컴포넌트가 같은 이름의 색을 참조하도록 분리했습니다.
+
 val SleepCareBackground = Color(0xFF111415)
 val SleepCareSurface = Color(0xFF111415)
 val SleepCareSurfaceDim = Color(0xFF111415)

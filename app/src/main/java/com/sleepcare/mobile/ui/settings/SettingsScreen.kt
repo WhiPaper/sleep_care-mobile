@@ -53,6 +53,7 @@ import kotlinx.coroutines.launch
 
 private const val HEALTH_CONNECT_PROVIDER_PACKAGE_NAME = "com.google.android.apps.healthdata"
 
+// 설정 화면에 필요한 알림 설정, 동기화 문구, Health Connect 권한 상태입니다.
 data class SettingsUiState(
     val preferences: NotificationPreferences = NotificationPreferences(),
     val lastSyncText: String = "Health Connect 수면 동기화 대기 중",
@@ -60,6 +61,7 @@ data class SettingsUiState(
     val healthConnectState: HealthConnectSleepState = HealthConnectSleepState.Checking,
 )
 
+// 알림 토글, 기기 관리, Health Connect 권한, 데이터 초기화를 제공하는 설정 화면입니다.
 @Composable
 fun SettingsScreen(
     paddingValues: PaddingValues,
@@ -74,6 +76,7 @@ fun SettingsScreen(
     val healthConnectPermissions = setOf(
         HealthPermission.getReadPermission(SleepSessionRecord::class),
     )
+    // 설정 화면으로 돌아올 때 Health Connect 권한/데이터 상태를 다시 확인합니다.
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -202,6 +205,7 @@ fun SettingsScreen(
     }
 }
 
+// 라벨과 설명이 붙은 공통 설정 스위치 카드입니다.
 @Composable
 private fun SettingSwitchCard(
     title: String,
@@ -229,6 +233,7 @@ private fun SettingSwitchCard(
 }
 
 @HiltViewModel
+// DataStore 설정과 Health Connect 수면 동기화 상태를 설정 화면용 문구로 조합합니다.
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val sleepRepository: SleepRepository,
@@ -269,6 +274,7 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
+// Health Connect 내부 상태를 설정 화면의 한 줄 동기화 상태 문구로 바꿉니다.
 private fun HealthConnectSleepState.toSettingsCopy(lastSyncedAt: java.time.LocalDateTime?): String = when (this) {
     HealthConnectSleepState.Ready -> if (lastSyncedAt != null) {
         " · Health Connect 수면 ${lastSyncedAt.toDisplayDateTime()}"
@@ -283,6 +289,7 @@ private fun HealthConnectSleepState.toSettingsCopy(lastSyncedAt: java.time.Local
     is HealthConnectSleepState.Error -> " · Health Connect 오류"
 }
 
+// Health Connect 앱 내부의 데이터/권한 관리 화면을 열고, 실패하면 일반 설정 화면으로 보냅니다.
 private fun openHealthConnectSettings(context: Context) {
     val intent = runCatching {
         HealthConnectClient.getHealthConnectManageDataIntent(context, HEALTH_CONNECT_PROVIDER_PACKAGE_NAME)
@@ -299,6 +306,7 @@ private fun openHealthConnectSettings(context: Context) {
     }
 }
 
+// Health Connect가 없거나 업데이트가 필요할 때 Play Store 또는 웹 페이지를 엽니다.
 private fun openHealthConnectUpdate(context: Context) {
     val marketIntent = Intent(
         Intent.ACTION_VIEW,

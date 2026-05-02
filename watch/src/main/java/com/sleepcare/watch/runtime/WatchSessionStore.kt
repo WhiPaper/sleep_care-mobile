@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+// 워치 UI의 가벼운 전역 상태 저장소입니다.
+// 서비스와 Compose 화면이 같은 세션/알림/권한 상태를 공유할 수 있게 합니다.
 object WatchSessionStore {
     private val _state = MutableStateFlow(WatchUiState())
     val state: StateFlow<WatchUiState> = _state.asStateFlow()
@@ -32,6 +34,7 @@ object WatchSessionStore {
 
     fun startDemoSession(sessionId: String = "demo-session") {
         _state.update {
+            // 실제 센서 백엔드가 붙기 전에도 화면 흐름을 확인할 수 있도록 기본 BPM/IBI를 채웁니다.
             it.copy(
                 screen = WatchScreen.ActiveSession,
                 sessionId = sessionId,
@@ -114,6 +117,7 @@ object WatchSessionStore {
 
     fun updateHeartRate(sample: WatchHeartRateSample) {
         _state.update {
+            // 알림/설정 화면을 보고 있을 때는 화면을 강제로 세션 화면으로 돌리지 않습니다.
             val nextScreen = when (it.screen) {
                 WatchScreen.Alerting -> WatchScreen.Alerting
                 WatchScreen.WatchSettings -> WatchScreen.WatchSettings

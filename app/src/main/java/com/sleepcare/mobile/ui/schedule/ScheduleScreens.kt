@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+// 스케줄 탭에서 추천, 공부 계획, 시험 일정, 사용자 목표를 함께 들고 다니는 상태입니다.
 data class ScheduleUiState(
     val recommendation: RecommendationSnapshot? = null,
     val studyPlan: StudyPlan? = null,
@@ -65,6 +66,7 @@ data class ScheduleUiState(
     val userGoals: UserGoals = UserGoals(),
 )
 
+// 추천 엔진이 계산한 취침/기상 시간과 실천 팁을 보여주는 화면입니다.
 @Composable
 fun SleepScheduleSuggestionScreen(
     paddingValues: PaddingValues,
@@ -102,6 +104,7 @@ fun SleepScheduleSuggestionScreen(
     }
 }
 
+// 사용자가 공부 가능 시간, 요일, 휴식 선호를 수정하는 화면입니다.
 @Composable
 fun StudyPlanScreen(
     paddingValues: PaddingValues,
@@ -116,6 +119,7 @@ fun StudyPlanScreen(
     var focusHours by rememberSaveable(currentPlan) { mutableStateOf((currentPlan?.focusHours ?: 8).toString()) }
     var breakMinutes by rememberSaveable(currentPlan) { mutableStateOf((currentPlan?.breakPreferenceMinutes ?: 15).toString()) }
     var autoBreak by rememberSaveable(currentPlan) { mutableStateOf(currentPlan?.autoBreakEnabled ?: true) }
+    // 요일 선택은 Set으로 들고 있다가 저장할 때 StudyPlan으로 변환합니다.
     var selectedDays by remember(currentPlan) {
         mutableStateOf(currentPlan?.days ?: setOf(
             DayOfWeek.MONDAY,
@@ -212,6 +216,7 @@ fun StudyPlanScreen(
     }
 }
 
+// 시험 일정을 추가/삭제해 추천 기상 시각에 반영하는 화면입니다.
 @Composable
 fun ExamScheduleScreen(
     paddingValues: PaddingValues,
@@ -280,6 +285,7 @@ fun ExamScheduleScreen(
     }
 }
 
+// 간단한 시험 일정 입력 다이얼로그입니다. 잘못된 날짜/시간은 안전한 기본값으로 대체합니다.
 @Composable
 private fun ExamEditorDialog(
     onDismiss: () -> Unit,
@@ -348,6 +354,7 @@ private fun ScreenHeader(title: String, onBack: () -> Unit) {
 }
 
 @HiltViewModel
+// 스케줄 관련 저장소를 합치고, 변경이 생길 때마다 추천을 다시 계산합니다.
 class ScheduleViewModel @Inject constructor(
     private val studyPlanRepository: StudyPlanRepository,
     private val examScheduleRepository: ExamScheduleRepository,
@@ -377,6 +384,7 @@ class ScheduleViewModel @Inject constructor(
         selectedDays: Set<DayOfWeek>,
     ) {
         viewModelScope.launch {
+            // 입력 문자열 파싱에 실패해도 앱이 멈추지 않도록 기본 시간/숫자로 보정합니다.
             val plan = StudyPlan(
                 startTime = runCatching { LocalTime.parse(startText) }.getOrDefault(LocalTime.of(8, 0)),
                 endTime = runCatching { LocalTime.parse(endText) }.getOrDefault(LocalTime.of(22, 30)),

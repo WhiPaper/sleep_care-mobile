@@ -24,6 +24,7 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import com.sleepcare.mobile.MainActivity
 import com.sleepcare.mobile.ui.theme.SleepCareTheme
 
+// Health Connect 권한 흐름으로 진입했을 때 보여주는 별도 안내 Activity입니다.
 class HealthConnectOnboardingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +45,7 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
 }
 
 @Composable
+// 권한 요청, 앱으로 계속, 나중에 선택지를 제공하는 간단한 권한 안내 화면입니다.
 private fun HealthConnectOnboardingScreen(
     onOpenApp: () -> Unit,
     onFinish: () -> Unit,
@@ -54,6 +56,7 @@ private fun HealthConnectOnboardingScreen(
     val launcher = rememberLauncherForActivityResult(
         PermissionController.createRequestPermissionResultContract(),
     ) {
+        // 권한 결과와 관계없이 메인 앱으로 돌아가고, 실제 상태는 Settings/DataSource에서 다시 확인합니다.
         onOpenApp()
     }
 

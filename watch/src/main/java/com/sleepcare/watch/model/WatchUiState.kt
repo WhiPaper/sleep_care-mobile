@@ -3,6 +3,7 @@ package com.sleepcare.watch.model
 import com.sleepcare.watch.contracts.WatchFlushPolicy
 import com.sleepcare.watch.contracts.WatchHeartRateSample
 
+// 워치 앱에서 보여줄 네 가지 최상위 화면입니다.
 enum class WatchScreen {
     ConnectionWaiting,
     ActiveSession,
@@ -10,6 +11,8 @@ enum class WatchScreen {
     WatchSettings,
 }
 
+// WatchSessionStore가 관리하는 단일 UI 상태입니다.
+// 실제 센서 세션 상태와 데모/플레이스홀더 UI 값이 함께 들어 있습니다.
 data class WatchUiState(
     val screen: WatchScreen = WatchScreen.ConnectionWaiting,
     val sessionId: String? = null,

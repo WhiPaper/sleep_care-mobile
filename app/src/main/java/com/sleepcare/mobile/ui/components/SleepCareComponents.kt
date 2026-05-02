@@ -63,6 +63,10 @@ import com.sleepcare.mobile.ui.theme.SleepCareSurfaceTint
 import com.sleepcare.mobile.ui.theme.SleepCareTertiary
 import com.sleepcare.mobile.ui.theme.SleepCareTertiaryContainer
 
+// 앱 전체 화면에서 반복해서 쓰는 공통 Compose 컴포넌트 모음입니다.
+// 카드, 지표, 타임라인, 기기 상태, 하단 탭처럼 디자인 언어를 한곳에서 유지합니다.
+
+// 타임라인 막대에서 한 색상 구간이 차지하는 비율과 설명입니다.
 data class TimelineSegment(
     val label: String,
     val percentage: Float,
@@ -70,6 +74,7 @@ data class TimelineSegment(
     val description: String? = null
 )
 
+// 기기 카드가 연결 상태를 색상/아이콘으로 표현할 때 쓰는 시각 상태입니다.
 enum class DeviceVisualStatus {
     Connected,
     Connecting,
@@ -77,6 +82,7 @@ enum class DeviceVisualStatus {
     Error
 }
 
+// 하단 내비게이션의 한 탭을 구성하는 정보입니다.
 data class BottomBarItem(
     val route: String,
     val label: String,
@@ -84,6 +90,7 @@ data class BottomBarItem(
     val contentDescription: String
 )
 
+// Sleep Care 앱의 기본 카드입니다. 어두운 반투명 톤과 얇은 테두리를 일관되게 적용합니다.
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
@@ -120,6 +127,7 @@ fun GlassCard(
     }
 }
 
+// 큰 숫자 하나와 보조 문구를 강조하는 대시보드용 지표 카드입니다.
 @Composable
 fun MetricHeroCard(
     title: String,
@@ -187,6 +195,7 @@ fun MetricHeroCard(
     }
 }
 
+// 아이콘, 설명, 선택적 행동 링크가 들어가는 안내/인사이트 카드입니다.
 @Composable
 fun InsightCallout(
     title: String,
@@ -242,6 +251,7 @@ fun InsightCallout(
     }
 }
 
+// 여러 구간 비율을 한 줄 막대로 표현하고 필요하면 범례와 라벨을 붙입니다.
 @Composable
 fun TimelineBar(
     segments: List<TimelineSegment>,
@@ -314,6 +324,7 @@ fun TimelineBar(
     }
 }
 
+// 추천 취침/기상 시각을 한눈에 보여주는 스케줄 대표 카드입니다.
 @Composable
 fun ScheduleHero(
     bedtime: String,
@@ -397,6 +408,7 @@ fun ScheduleHero(
     }
 }
 
+// ScheduleHero 내부에서 쓰는 시간 타일입니다.
 @Composable
 private fun ScheduleTimeTile(
     label: String,
@@ -425,6 +437,7 @@ private fun ScheduleTimeTile(
     }
 }
 
+// 카드 스타일을 공유하는 작은 텍스트 액션입니다.
 @Composable
 private fun ActionChip(
     text: String,
@@ -445,6 +458,7 @@ private fun ActionChip(
     }
 }
 
+// Pi/Watch 연결 상태를 아이콘, 상태 문구, 상세 설명, 액션으로 표시합니다.
 @Composable
 fun DeviceStatusCard(
     deviceName: String,
@@ -531,6 +545,7 @@ fun DeviceStatusCard(
     }
 }
 
+// 앱의 4개 루트 탭을 표시하는 하단 내비게이션입니다.
 @Composable
 fun AppBottomBar(
     currentRoute: String,
@@ -596,6 +611,7 @@ fun AppBottomBar(
     }
 }
 
+// 내부 enum을 사용자에게 보여줄 짧은 한국어 상태 문구로 변환합니다.
 private fun DeviceVisualStatus.toDisplayName(): String = when (this) {
     DeviceVisualStatus.Connected -> "연결됨"
     DeviceVisualStatus.Connecting -> "스캔 중"

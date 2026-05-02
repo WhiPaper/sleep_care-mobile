@@ -21,6 +21,8 @@ import com.sleepcare.watch.ui.screen.ActiveSessionScreen
 import com.sleepcare.watch.ui.screen.WatchSettingsScreen
 import com.sleepcare.watch.ui.theme.SleepCareWatchTheme
 
+// 워치 앱의 최상위 Compose 화면입니다.
+// WatchSessionStore의 screen 값에 따라 대기/세션/알림/설정 화면을 전환합니다.
 @Composable
 fun WatchApp() {
     val state by WatchSessionStore.state.collectAsState()
@@ -43,6 +45,7 @@ fun WatchApp() {
                     )
                     .padding(horizontal = 10.dp, vertical = 8.dp),
             ) {
+                // 워치 화면은 네비게이션 라이브러리 대신 단순 상태 전환으로 충분합니다.
                 when (state.screen) {
                     WatchScreen.ConnectionWaiting -> ConnectionWaitingScreen(
                         state = state,

@@ -10,12 +10,16 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -27,7 +31,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -211,50 +218,71 @@ private fun QrScannerView(
         }
     }
 
-    AndroidView(
-        modifier = modifier,
-        factory = { viewContext ->
-            val previewView = PreviewView(viewContext)
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(viewContext)
-            cameraProviderFuture.addListener(
-                {
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().apply {
-                        setSurfaceProvider(previewView.surfaceProvider)
-                    }
-                    val analysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .apply {
-                            setAnalyzer(executor) { imageProxy ->
-                                val mediaImage = imageProxy.image
-                                if (mediaImage == null || !processing.compareAndSet(false, true)) {
-                                    imageProxy.close()
-                                    return@setAnalyzer
-                                }
-                                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                                scanner.process(image)
-                                    .addOnSuccessListener { barcodes ->
-                                        barcodes.firstNotNullOfOrNull { it.rawValue }?.let(onQrScanned)
-                                    }
-                                    .addOnCompleteListener {
-                                        processing.set(false)
-                                        imageProxy.close()
-                                    }
-                            }
-                        }
+    var latestQrText by remember { mutableStateOf("") }
+    val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
 
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        CameraSelector.DEFAULT_BACK_CAMERA,
-                        preview,
-                        analysis,
-                    )
-                },
-                ContextCompat.getMainExecutor(context),
-            )
-            previewView
-        },
-    )
+    Box(modifier = modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { viewContext ->
+                val previewView = PreviewView(viewContext)
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(viewContext)
+                cameraProviderFuture.addListener(
+                    {
+                        val cameraProvider = cameraProviderFuture.get()
+                        val preview = Preview.Builder().build().apply {
+                            setSurfaceProvider(previewView.surfaceProvider)
+                        }
+                        val analysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .apply {
+                                setAnalyzer(executor) { imageProxy ->
+                                    val mediaImage = imageProxy.image
+                                    if (mediaImage == null || !processing.compareAndSet(false, true)) {
+                                        imageProxy.close()
+                                        return@setAnalyzer
+                                    }
+                                    val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                    scanner.process(image)
+                                        .addOnSuccessListener { barcodes ->
+                                            barcodes.firstNotNullOfOrNull { it.rawValue }?.let { rawValue ->
+                                                // 최종본에서는 빠질 수 있는 현장 확인용 표시입니다.
+                                                // 실제 등록 스캐너가 QR을 얼마나 안정적으로 읽는지 바로 확인합니다.
+                                                mainExecutor.execute { latestQrText = rawValue }
+                                                onQrScanned(rawValue)
+                                            }
+                                        }
+                                        .addOnCompleteListener {
+                                            processing.set(false)
+                                            imageProxy.close()
+                                        }
+                                }
+                            }
+
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            analysis,
+                        )
+                    },
+                    ContextCompat.getMainExecutor(context),
+                )
+                previewView
+            },
+        )
+        Text(
+            text = latestQrText.ifBlank { "QR 대기 중" },
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(12.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color.Black.copy(alpha = 0.72f))
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
+        )
+    }
 }

@@ -19,12 +19,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.sleepcare.mobile.data.source.PiPairingCodec
 import com.sleepcare.mobile.domain.ConnectionStatus
 import com.sleepcare.mobile.domain.ConnectedDeviceState
 import com.sleepcare.mobile.domain.DeviceConnectionRepository
 import com.sleepcare.mobile.domain.DeviceType
 import com.sleepcare.mobile.domain.TrustedPiDevice
-import com.sleepcare.mobile.data.source.PiPairingCodec
 import com.sleepcare.mobile.ui.components.DeviceStatusCard
 import com.sleepcare.mobile.ui.components.DeviceVisualStatus
 import com.sleepcare.mobile.ui.components.GlassCard
@@ -36,11 +36,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+// 기기 연결 화면은 Repository가 합쳐 준 Pi/Watch 상태 리스트를 그대로 표시합니다.
 data class DevicesUiState(
     val devices: List<ConnectedDeviceState> = emptyList(),
     val trustedPi: TrustedPiDevice? = null,
 )
 
+// Galaxy Watch와 Raspberry Pi 연결 상태를 카드로 보여주고 재시도/연결 해제를 제공합니다.
 @Composable
 fun DeviceConnectionScreen(
     paddingValues: PaddingValues,
@@ -142,6 +144,7 @@ fun DeviceConnectionScreen(
 }
 
 @HiltViewModel
+// 기기 상태 Flow를 UI 상태로 감싸고 버튼 명령을 Repository로 전달합니다.
 class DevicesViewModel @Inject constructor(
     private val deviceConnectionRepository: DeviceConnectionRepository,
 ) : ViewModel() {
@@ -170,6 +173,7 @@ class DevicesViewModel @Inject constructor(
     }
 }
 
+// 도메인 연결 상태를 카드 컴포넌트가 이해하는 시각 상태로 변환합니다.
 private fun ConnectionStatus.toVisualStatus(): DeviceVisualStatus = when (this) {
     ConnectionStatus.Connected -> DeviceVisualStatus.Connected
     ConnectionStatus.Scanning -> DeviceVisualStatus.Connecting

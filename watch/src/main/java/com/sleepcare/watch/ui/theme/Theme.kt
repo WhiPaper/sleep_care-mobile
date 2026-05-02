@@ -7,6 +7,7 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Typography
 import androidx.wear.compose.material.Shapes
 
+// Wear OS 화면에 적용하는 어두운 Sleep Care 색상입니다.
 private val NightColors = Colors(
     primary = Color(0xFFBDC2FF),
     primaryVariant = Color(0xFF1A237E),
@@ -26,6 +27,7 @@ private val NightTypography = Typography()
 private val NightShapes = Shapes()
 
 @Composable
+// 워치 앱의 최상위 MaterialTheme 래퍼입니다.
 fun SleepCareWatchTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colors = NightColors,

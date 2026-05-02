@@ -6,6 +6,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// 모바일 앱 모듈입니다.
+// Compose UI, Hilt, Room/DataStore, Health Connect, Wear OS Data Layer, Pi WSS 통신을 모두 포함합니다.
 android {
     namespace = "com.sleepcare.mobile"
     compileSdk = 36
@@ -57,6 +59,7 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
 
+    // 워치와 같은 메시지 모델/코덱을 공유해 Data Layer 계약을 맞춥니다.
     implementation(project(":watch-contracts"))
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.health.connect:connect-client:1.1.0")
@@ -73,6 +76,11 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("com.google.guava:guava:33.2.1-android")
     implementation("com.google.android.gms:play-services-wearable:19.0.0")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.google.guava:guava:33.2.1-android")
@@ -81,13 +89,16 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
     implementation("org.json:json:20240303")
 
+    // Hilt는 ViewModel/Repository/DataSource 생성과 생명주기 관리를 맡습니다.
     implementation("com.google.dagger:hilt-android:2.57.1")
     kapt("com.google.dagger:hilt-compiler:2.57.1")
 
+    // Room은 분석/세션/워치 샘플 캐시, DataStore는 작은 설정값을 담당합니다.
     implementation("androidx.room:room-runtime:2.7.2")
     implementation("androidx.room:room-ktx:2.7.2")
     kapt("androidx.room:room-compiler:2.7.2")
 
+    // Compose BOM으로 Compose 라이브러리 버전을 한 번에 고정합니다.
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui")

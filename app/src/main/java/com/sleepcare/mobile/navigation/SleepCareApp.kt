@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+// Compose Navigation에서 사용하는 모든 라우트 문자열을 한곳에 모아 오타를 줄입니다.
 object AppRoute {
     const val Onboarding = "onboarding"
     const val Home = "home"
@@ -67,10 +68,13 @@ object AppRoute {
     const val Settings = "settings"
 }
 
+// 온보딩 완료 여부를 아직 읽는 중일 수 있으므로 nullable로 둡니다.
 data class AppUiState(
     val onboardingCompleted: Boolean? = null,
 )
 
+// 앱의 최상위 Compose 진입점입니다.
+// 온보딩 여부를 확인한 뒤 NavHost, 하단 바, 공통 Snackbar를 한 번에 구성합니다.
 @Composable
 fun SleepCareApp(
     appViewModel: AppViewModel = hiltViewModel(),
@@ -83,6 +87,7 @@ fun SleepCareApp(
     val currentRootRoute = currentBackStackEntry?.destination?.rootRoute()
 
     if (appState.onboardingCompleted == null) {
+        // DataStore 첫 값을 읽기 전에는 잘못된 시작 화면으로 이동하지 않도록 로딩만 표시합니다.
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
@@ -111,6 +116,7 @@ fun SleepCareApp(
             navController = navController,
             startDestination = if (appState.onboardingCompleted == true) AppRoute.Home else AppRoute.Onboarding,
         ) {
+            // 각 composable 블록은 화면을 만들고, 화면 밖 이동은 여기서만 처리합니다.
             composable(AppRoute.Onboarding) {
                 val viewModel: OnboardingViewModel = hiltViewModel()
                 OnboardingScreen(
@@ -233,6 +239,7 @@ fun SleepCareApp(
 }
 
 @HiltViewModel
+// 앱 시작 시 기본 데이터와 추천을 준비하고, 전역 메시지/초기화를 담당합니다.
 class AppViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val sleepRepository: SleepRepository,
@@ -254,6 +261,7 @@ class AppViewModel @Inject constructor(
             seedAndRefresh()
         }
         viewModelScope.launch {
+            // 졸음 이벤트가 새로 들어오면 추천 취침/기상 시간이 달라질 수 있어 다시 계산합니다.
             drowsinessRepository.observeDrowsinessEvents().drop(1).collect {
                 recommendationRepository.refreshRecommendations()
             }
@@ -288,6 +296,7 @@ class AppViewModel @Inject constructor(
     }
 }
 
+// 상세 화면에 들어가도 하단 바의 선택 상태는 루트 탭 기준으로 유지합니다.
 private fun androidx.navigation.NavDestination.rootRoute(): String? {
     val routes = hierarchy.mapNotNull { it.route }
     return when {

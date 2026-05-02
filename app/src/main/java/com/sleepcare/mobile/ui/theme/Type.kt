@@ -6,9 +6,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+// 현재는 시스템 SansSerif를 쓰되, 나중에 브랜드 폰트를 붙일 수 있도록 별도 변수로 둡니다.
 private val DefaultBodyFont = FontFamily.SansSerif
 private val DefaultHeadlineFont = FontFamily.SansSerif
 
+// 대시보드 숫자, 카드 제목, 보조 설명이 일관되게 보이도록 정의한 타이포그래피 세트입니다.
 val SleepCareTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = DefaultHeadlineFont,
