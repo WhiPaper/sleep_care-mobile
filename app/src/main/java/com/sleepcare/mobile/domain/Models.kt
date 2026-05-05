@@ -228,6 +228,55 @@ data class PiSessionSummary(
 )
 
 // watch-contracts 모듈의 모델을 모바일 도메인 이름공간에서도 그대로 쓰기 위한 별칭입니다.
+enum class PiDebugSessionMode {
+    EyeOnly,
+    EyeWithSyntheticHr,
+}
+
+enum class PiDebugConnectionMode {
+    DirectEndpoint,
+    RegisteredPiNsd,
+}
+
+// 개발자 도구에서 직접 입력하는 Pi WSS endpoint입니다.
+// 운영 연결은 QR/NSD로 검증된 TrustedPiDevice만 사용하므로, 이 값은 디버그 카드 내부 진단에만 머뭅니다.
+data class PiDebugEndpoint(
+    val host: String = "",
+    val port: String = "8765",
+    val wsPath: String = "/ws",
+    val deviceId: String = "deskpi-a1",
+    val displayName: String = "SleepCare Pi",
+)
+
+// NSD 후보는 자동 등록하지 않고 원본 TXT record를 그대로 보여줍니다.
+// Avahi 설정의 proto/tls/device_id/ws 불일치를 개발자가 눈으로 확인하기 위한 진단 모델입니다.
+data class PiDebugNsdCandidate(
+    val serviceName: String,
+    val serviceType: String,
+    val host: String?,
+    val port: Int?,
+    val attributes: Map<String, String>,
+    val error: String? = null,
+)
+
+// Pi 개발자 모드는 운영 공부 세션과 완전히 분리된 진단 상태입니다.
+// 여기의 sessionId는 Room에 저장하지 않고, 기존 Pi wire protocol을 실제로 보낼 때만 사용합니다.
+data class PiDebugState(
+    val endpoint: PiDebugEndpoint = PiDebugEndpoint(),
+    val connectionMode: PiDebugConnectionMode = PiDebugConnectionMode.DirectEndpoint,
+    val sessionId: String? = null,
+    val commandInFlight: Boolean = false,
+    val lastCommandStatus: String = "Pi 개발 테스트 대기 중",
+    val serverSpkiSha256: String? = null,
+    val generatedPairingJson: String? = null,
+    val nsdCandidates: List<PiDebugNsdCandidate> = emptyList(),
+    val lastHelloSummary: String? = null,
+    val lastRiskSummary: String? = null,
+    val lastAlertSummary: String? = null,
+    val lastSummary: String? = null,
+    val lastError: String? = null,
+)
+
 typealias WatchFlushPolicy = SharedWatchFlushPolicy
 typealias WatchSessionConfig = SharedWatchSessionConfig
 typealias WatchHeartRateSample = SharedWatchHeartRateSample

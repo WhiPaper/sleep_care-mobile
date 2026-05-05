@@ -464,3 +464,5 @@ Pi 쪽 체크리스트:
 - [ ] 등록된 `device_id`와 다른 Pi는 발견되어도 연결하지 않는다.
 - [ ] SPKI pin이 다르면 보안 오류로 연결을 차단한다.
 - [ ] SPKI pin이 같으면 `hello`/`hello_ack` 후 공부 세션을 열 수 있다.
+
+> 참고: QR, Avahi, WSS, hello, session 흐름을 앱 개발자 도움 없이 단계별로 확인하려면 [Pi 개발자 디버그 가이드](./pi-developer-debug-guide.md)를 먼저 따라간다. QR 인식이 안 되는 초기 Pi 구현도 앱 개발자 모드의 직접 endpoint 테스트로 진단할 수 있다.

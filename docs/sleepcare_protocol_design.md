@@ -615,6 +615,12 @@ sequenceDiagram
 - 진단: 폰의 전송 성공은 Wear OS 노드 전송 요청 성공을 뜻한다. 워치 앱 수신 여부는 워치 설정 화면의 `Message Log` 또는 `adb logcat -s SleepCareWatch`에서 `/ctl/start`, `/hr/ack`, `/alert/vibrate` 등 path 수신과 서비스 처리 로그로 확인한다. 워치 앱 화면이 열린 경우에는 live listener도 같은 라우터로 수신해 manifest listener 기동 문제를 함께 분리한다.
 - 설치 확인: 이전 워치 debug 패키지 `com.sleepcare.watch`가 기기에 남아 있으면 혼동될 수 있으므로 `adb -s <watch> uninstall com.sleepcare.watch` 후 새 워치 APK를 설치한다.
 
+#### 2026-05-06 실기기 진단 결과
+- 증상: 폰 개발자 모드 카드에서는 `SleepCare 워치 앱 capability 확인됨`으로 표시되고 `sendMessage()`도 성공했지만, 워치 앱 `Message Log`와 `SleepCareWatch` logcat에는 수신 로그가 없었다.
+- 조치: 워치 앱 `applicationId`를 폰과 같은 `com.sleepcare.mobile`로 맞춘 뒤, 워치 Activity가 foreground일 때 `MessageClient.addListener` live listener를 추가하고 manifest listener와 같은 `WatchMessageRouter`를 사용하게 했다.
+- 결과: 워치 앱을 화면에 띄운 상태에서 테스트 세션 시작, flush policy, vibration, ACK, backfill, stop 명령이 모두 워치에 도달했다.
+- 결론: capability discovery와 Data Layer 메시지 계약 자체는 동작한다. 남은 위험은 manifest 기반 `WearableListenerService`가 백그라운드에서 안정적으로 wake-up되지 않는 경로이며, 폰 단독 시작 UX를 운영하려면 이 경로를 별도로 계속 검증해야 한다.
+
 ### 15.4 폰-파이 끊김 복구
 
 ```mermaid
@@ -846,3 +852,5 @@ stateDiagram-v2
 ## 21. 최종 한 줄 요약
 
 **장기 목표 구조는 `스마트워치 → 스마트폰 → 라즈베리파이` 이며, 현재 구현은 `스마트폰 ↔ 라즈베리파이` 실연동 위에 `Galaxy Watch` companion 스캐폴드와 `Health Connect` 수면 연동을 올린 상태다. 최종 졸음 판단은 라즈베리파이가 담당하고, 폰-파이는 `NSD + WSS` 기반으로 연결한다.**
+
+> 참고: Pi 구현 검증은 새 debug message type을 만들지 않고 기존 `hello`, `session.open`, `hr.ingest`, `session.close` wire shape로 진행한다. 버튼별 실행 순서와 Pi 로그 확인법은 [Pi 개발자 디버그 가이드](./pi-developer-debug-guide.md)를 기준으로 한다.

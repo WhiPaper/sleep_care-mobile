@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +26,10 @@ import com.sleepcare.mobile.domain.ConnectionStatus
 import com.sleepcare.mobile.domain.ConnectedDeviceState
 import com.sleepcare.mobile.domain.DeviceConnectionRepository
 import com.sleepcare.mobile.domain.DeviceType
+import com.sleepcare.mobile.domain.PiDebugConnectionMode
+import com.sleepcare.mobile.domain.PiDebugEndpoint
+import com.sleepcare.mobile.domain.PiDebugRepository
+import com.sleepcare.mobile.domain.PiDebugState
 import com.sleepcare.mobile.domain.SettingsRepository
 import com.sleepcare.mobile.domain.TrustedPiDevice
 import com.sleepcare.mobile.domain.WatchDebugRepository
@@ -45,6 +51,7 @@ data class DevicesUiState(
     val trustedPi: TrustedPiDevice? = null,
     val developerModeEnabled: Boolean = false,
     val watchDebugState: WatchDebugState = WatchDebugState(),
+    val piDebugState: PiDebugState = PiDebugState(),
 )
 
 // Galaxy Watch와 Raspberry Pi 연결 상태를 카드로 보여주고 재시도/연결 해제를 제공합니다.
@@ -132,6 +139,22 @@ fun DeviceConnectionScreen(
         }
         if (uiState.developerModeEnabled) {
             item {
+                PiDebugCard(
+                    state = uiState.piDebugState,
+                    onEndpointChanged = viewModel::updatePiDebugEndpoint,
+                    onConnectionModeChanged = viewModel::setPiDebugConnectionMode,
+                    onReadSpki = viewModel::readPiDebugServerSpki,
+                    onGenerateJson = viewModel::generatePiDebugPairingJson,
+                    onRegisterJson = viewModel::registerPiDebugPairingJson,
+                    onDiscoverNsd = viewModel::discoverPiDebugNsdCandidates,
+                    onHello = viewModel::sendPiDebugHello,
+                    onStartEyeOnly = viewModel::startPiDebugEyeOnlySession,
+                    onStartEyeWithHr = viewModel::startPiDebugEyeWithSyntheticHrSession,
+                    onSendHr = viewModel::sendPiDebugSyntheticHeartRate,
+                    onStop = viewModel::stopPiDebugSession,
+                )
+            }
+            item {
                 WatchDebugCard(
                     state = uiState.watchDebugState,
                     onRefresh = viewModel::refreshWatchDebugConnection,
@@ -156,6 +179,151 @@ fun DeviceConnectionScreen(
                     Button(onClick = viewModel::startScan, modifier = Modifier.fillMaxWidth()) {
                         Text("로컬 Pi 다시 찾기")
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PiDebugCard(
+    state: PiDebugState,
+    onEndpointChanged: (PiDebugEndpoint) -> Unit,
+    onConnectionModeChanged: (PiDebugConnectionMode) -> Unit,
+    onReadSpki: () -> Unit,
+    onGenerateJson: () -> Unit,
+    onRegisterJson: () -> Unit,
+    onDiscoverNsd: () -> Unit,
+    onHello: () -> Unit,
+    onStartEyeOnly: () -> Unit,
+    onStartEyeWithHr: () -> Unit,
+    onSendHr: () -> Unit,
+    onStop: () -> Unit,
+) {
+    GlassCard {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("개발자 모드 · Pi 개발 테스트", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "QR/Avahi 없이도 WSS, hello, session.open, hr.ingest, session.close를 기존 프로토콜 그대로 확인합니다.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = state.endpoint.host,
+                onValueChange = { onEndpointChanged(state.endpoint.copy(host = it)) },
+                label = { Text("host") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = state.endpoint.port,
+                onValueChange = { onEndpointChanged(state.endpoint.copy(port = it)) },
+                label = { Text("port") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = state.endpoint.wsPath,
+                onValueChange = { onEndpointChanged(state.endpoint.copy(wsPath = it)) },
+                label = { Text("wsPath") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = state.endpoint.deviceId,
+                onValueChange = { onEndpointChanged(state.endpoint.copy(deviceId = it)) },
+                label = { Text("deviceId") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = state.endpoint.displayName,
+                onValueChange = { onEndpointChanged(state.endpoint.copy(displayName = it)) },
+                label = { Text("displayName") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedButton(
+                onClick = { onConnectionModeChanged(PiDebugConnectionMode.DirectEndpoint) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.commandInFlight,
+            ) {
+                Text(if (state.connectionMode == PiDebugConnectionMode.DirectEndpoint) "연결 모드: 직접 endpoint 선택됨" else "연결 모드: 직접 endpoint")
+            }
+            OutlinedButton(
+                onClick = { onConnectionModeChanged(PiDebugConnectionMode.RegisteredPiNsd) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.commandInFlight,
+            ) {
+                Text(if (state.connectionMode == PiDebugConnectionMode.RegisteredPiNsd) "연결 모드: 등록 Pi(NSD) 선택됨" else "연결 모드: 등록 Pi(NSD)")
+            }
+            Text(
+                buildString {
+                    append("마지막 명령: ${state.lastCommandStatus}")
+                    append("\n현재 모드: ${state.connectionMode.toUiLabel()}")
+                    append("\nSPKI: ${state.serverSpkiSha256?.let(PiPairingCodec::shortPin) ?: "아직 없음"}")
+                    append("\n테스트 세션: ${state.sessionId ?: "아직 없음"}")
+                    state.lastHelloSummary?.let { append("\nhello: $it") }
+                    state.lastRiskSummary?.let { append("\nrisk: $it") }
+                    state.lastAlertSummary?.let { append("\nalert: $it") }
+                    state.lastSummary?.let { append("\nsummary: $it") }
+                    state.lastError?.let { append("\n오류: $it") }
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onReadSpki, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("SPKI 읽기")
+            }
+            OutlinedButton(onClick = onGenerateJson, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("pairing JSON 생성")
+            }
+            OutlinedButton(onClick = onRegisterJson, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("JSON으로 등록")
+            }
+            OutlinedButton(onClick = onDiscoverNsd, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("NSD 후보 검색")
+            }
+            OutlinedButton(onClick = onHello, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("hello 테스트")
+            }
+            Button(onClick = onStartEyeOnly, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("Eye-only 시작")
+            }
+            Button(onClick = onStartEyeWithHr, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("Eye+Synthetic HR 시작")
+            }
+            OutlinedButton(onClick = onSendHr, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("Synthetic HR 전송")
+            }
+            OutlinedButton(onClick = onStop, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("종료")
+            }
+            if (state.generatedPairingJson != null) {
+                Text("생성된 pairing JSON", style = MaterialTheme.typography.labelLarge)
+                SelectionContainer {
+                    Text(
+                        state.generatedPairingJson,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (state.nsdCandidates.isNotEmpty()) {
+                Text("NSD 후보", style = MaterialTheme.typography.labelLarge)
+                SelectionContainer {
+                    Text(
+                        state.nsdCandidates.joinToString("\n\n") { candidate ->
+                            buildString {
+                                append(candidate.serviceName)
+                                append(" · ${candidate.host ?: "host 없음"}:${candidate.port ?: 0}")
+                                append("\nTXT ${candidate.attributes}")
+                                candidate.error?.let { append("\n오류 $it") }
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -220,18 +388,21 @@ class DevicesViewModel @Inject constructor(
     private val deviceConnectionRepository: DeviceConnectionRepository,
     private val settingsRepository: SettingsRepository,
     private val watchDebugRepository: WatchDebugRepository,
+    private val piDebugRepository: PiDebugRepository,
 ) : ViewModel() {
     val uiState = combine(
         deviceConnectionRepository.observeDevices(),
         deviceConnectionRepository.observeTrustedPi(),
         settingsRepository.observeDeveloperModeEnabled(),
         watchDebugRepository.observeDebugState(),
-    ) { devices, trustedPi, developerModeEnabled, watchDebugState ->
+        piDebugRepository.observeDebugState(),
+    ) { devices, trustedPi, developerModeEnabled, watchDebugState, piDebugState ->
         DevicesUiState(
             devices = devices,
             trustedPi = trustedPi,
             developerModeEnabled = developerModeEnabled,
             watchDebugState = watchDebugState,
+            piDebugState = piDebugState,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DevicesUiState())
@@ -279,6 +450,50 @@ class DevicesViewModel @Inject constructor(
     fun stopWatchDebugSession() {
         viewModelScope.launch { watchDebugRepository.stopTestSession() }
     }
+
+    fun updatePiDebugEndpoint(endpoint: PiDebugEndpoint) {
+        viewModelScope.launch { piDebugRepository.updateEndpoint(endpoint) }
+    }
+
+    fun setPiDebugConnectionMode(mode: PiDebugConnectionMode) {
+        viewModelScope.launch { piDebugRepository.setConnectionMode(mode) }
+    }
+
+    fun readPiDebugServerSpki() {
+        viewModelScope.launch { piDebugRepository.readServerSpki() }
+    }
+
+    fun generatePiDebugPairingJson() {
+        viewModelScope.launch { piDebugRepository.generatePairingJson() }
+    }
+
+    fun registerPiDebugPairingJson() {
+        viewModelScope.launch { piDebugRepository.registerGeneratedPairingJson() }
+    }
+
+    fun discoverPiDebugNsdCandidates() {
+        viewModelScope.launch { piDebugRepository.discoverNsdCandidates() }
+    }
+
+    fun sendPiDebugHello() {
+        viewModelScope.launch { piDebugRepository.sendHello() }
+    }
+
+    fun startPiDebugEyeOnlySession() {
+        viewModelScope.launch { piDebugRepository.startEyeOnlySession() }
+    }
+
+    fun startPiDebugEyeWithSyntheticHrSession() {
+        viewModelScope.launch { piDebugRepository.startEyeWithSyntheticHrSession() }
+    }
+
+    fun sendPiDebugSyntheticHeartRate() {
+        viewModelScope.launch { piDebugRepository.sendSyntheticHeartRate() }
+    }
+
+    fun stopPiDebugSession() {
+        viewModelScope.launch { piDebugRepository.stopTestSession() }
+    }
 }
 
 // 도메인 연결 상태를 카드 컴포넌트가 이해하는 시각 상태로 변환합니다.
@@ -287,4 +502,9 @@ private fun ConnectionStatus.toVisualStatus(): DeviceVisualStatus = when (this) 
     ConnectionStatus.Scanning -> DeviceVisualStatus.Connecting
     ConnectionStatus.Disconnected -> DeviceVisualStatus.Disconnected
     ConnectionStatus.Failed -> DeviceVisualStatus.Error
+}
+
+private fun PiDebugConnectionMode.toUiLabel(): String = when (this) {
+    PiDebugConnectionMode.DirectEndpoint -> "직접 endpoint"
+    PiDebugConnectionMode.RegisteredPiNsd -> "등록 Pi(NSD)"
 }

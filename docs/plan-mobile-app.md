@@ -72,6 +72,7 @@
 - 운영 공부 세션은 `sleepcare_watch_session_runtime` capability가 확인된 워치 앱 노드에만 명령을 보낸다.
 - 개발자 모드 워치 테스트는 capability를 먼저 사용하되, capability discovery 문제가 의심될 때 페어링된 Wear OS 노드로 직접 전송해 Data Layer 연결과 워치 앱 수신 여부를 분리 진단한다.
 - 폰의 전송 성공은 워치 앱 수신 확인이 아니므로, 워치 앱 설정 화면의 `Message Log`와 `adb logcat -s SleepCareWatch`로 listener 수신/서비스 처리/ready 회신 단계를 함께 확인한다.
+- 2026-05-06 실기기 테스트에서는 capability가 확인된 상태에서도 manifest listener 로그가 없었고, 워치 앱을 연 상태의 live listener에서는 전체 테스트 명령이 성공했다. 따라서 현재 운영 리스크는 Data Layer 계약보다 백그라운드 listener wake-up 안정성에 있다.
 - 기존 워치 debug 패키지 `com.sleepcare.watch`가 남아 있으면 테스트 대상이 헷갈릴 수 있으므로 새 APK 설치 전 `adb -s <watch> uninstall com.sleepcare.watch`로 제거한다.
 
 ### 수면 데이터 연동
@@ -141,3 +142,5 @@
 - 워치 앱 연결 시점과 프로토콜 세부 확장 범위
 - 참고 의견: 홈 화면은 "어제 수면 상태", "최근 졸음 빈도", "오늘 추천 취침 시간" 중심 구성이 적합하다.
 - 참고 의견: 앱은 많은 정보를 보여주는 것보다 행동으로 이어지는 제안을 중심으로 설계하는 편이 좋다.
+
+> 참고: 개발자 모드의 Pi 개발 테스트 카드는 운영 공부 세션과 분리되어 직접 endpoint, SPKI 읽기, pairing JSON 생성/등록, NSD 후보 검색, hello, Eye-only, Synthetic HR, 종료를 검증한다. Pi 개발자가 따라갈 사용 설명서는 [Pi 개발자 디버그 가이드](./pi-developer-debug-guide.md)에 둔다.

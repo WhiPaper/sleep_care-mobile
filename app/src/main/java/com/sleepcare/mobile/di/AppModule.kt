@@ -13,6 +13,9 @@ import com.sleepcare.mobile.data.local.StudySessionDao
 import com.sleepcare.mobile.data.repository.DeviceConnectionRepositoryImpl
 import com.sleepcare.mobile.data.repository.DrowsinessRepositoryImpl
 import com.sleepcare.mobile.data.repository.ExamScheduleRepositoryImpl
+import com.sleepcare.mobile.data.repository.PiDebugRepositoryImpl
+import com.sleepcare.mobile.data.repository.PiDebugTrustedPiStore
+import com.sleepcare.mobile.data.repository.PreferencesPiDebugTrustedPiStore
 import com.sleepcare.mobile.data.repository.RecommendationRepositoryImpl
 import com.sleepcare.mobile.data.repository.SettingsRepositoryImpl
 import com.sleepcare.mobile.data.repository.SleepCareRecommendationEngine
@@ -22,10 +25,13 @@ import com.sleepcare.mobile.data.repository.StudySessionRepositoryImpl
 import com.sleepcare.mobile.data.repository.WatchDebugRepositoryImpl
 import com.sleepcare.mobile.data.source.GalaxyWatchSessionDataSource
 import com.sleepcare.mobile.data.source.HealthConnectSleepDataSource
+import com.sleepcare.mobile.data.source.PiDebugClient
+import com.sleepcare.mobile.data.source.PiDebugNetworkClient
 import com.sleepcare.mobile.data.source.PiNetworkDataSourceImpl
 import com.sleepcare.mobile.domain.DeviceConnectionRepository
 import com.sleepcare.mobile.domain.DrowsinessRepository
 import com.sleepcare.mobile.domain.ExamScheduleRepository
+import com.sleepcare.mobile.domain.PiDebugRepository
 import com.sleepcare.mobile.domain.PiNetworkDataSource
 import com.sleepcare.mobile.domain.RecommendationEngine
 import com.sleepcare.mobile.domain.RecommendationRepository
@@ -135,4 +141,13 @@ abstract class AppBindsModule {
 
     @Binds
     abstract fun bindWatchDebugRepository(impl: WatchDebugRepositoryImpl): WatchDebugRepository
+
+    @Binds
+    abstract fun bindPiDebugRepository(impl: PiDebugRepositoryImpl): PiDebugRepository
+
+    @Binds
+    abstract fun bindPiDebugClient(impl: PiDebugNetworkClient): PiDebugClient
+
+    @Binds
+    abstract fun bindPiDebugTrustedPiStore(impl: PreferencesPiDebugTrustedPiStore): PiDebugTrustedPiStore
 }

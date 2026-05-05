@@ -34,6 +34,12 @@
 - 모바일 앱은 워치 세션 시작/중지, 심박 샘플 큐/커서, ACK 커서, 백필 요청, `hr.ingest` 중계를 수행한다.
 - 실제 심박/IBI 연속 수집은 Samsung Health Sensor SDK AAR 연결 단계가 남아 있다.
 
+### 실기기 진단 메모
+- 2026-05-06 Galaxy Watch `SM_R905N` 실기기 테스트에서 `sleepcare_watch_session_runtime` capability는 확인되지만, manifest 기반 `WearableListenerService`에는 `/sc/v1/...` 메시지가 기록되지 않는 현상을 확인했다.
+- 같은 설치 상태에서 워치 앱을 화면에 열고 `MessageClient.addListener` live listener를 붙이자 테스트 세션 시작, flush policy, vibration, ACK, backfill, stop 명령이 모두 성공했다.
+- 따라서 해당 증상은 Data Layer 계약, path, payload, nodeId 전체가 틀린 문제라기보다, 워치 OS/Play Services 조합에서 manifest listener가 안정적으로 기동하지 않은 문제로 본다.
+- 운영 세션을 폰에서만 시작해야 한다면 manifest listener wake-up 경로를 계속 검증해야 한다. 워치 앱을 먼저 열어두는 테스트/운영 흐름에서는 live listener가 실사용 가능한 수신 경로가 된다.
+
 ### 수면 데이터
 - 워치 앱은 수면 기록을 직접 읽지 않고, 설정 화면에서 “휴대폰 Health Connect 관리” 상태를 보여준다.
 - 모바일 앱은 Health Connect 기반 수면 세션 읽기와 권한/미지원/무데이터 상태 분기를 구현했다.

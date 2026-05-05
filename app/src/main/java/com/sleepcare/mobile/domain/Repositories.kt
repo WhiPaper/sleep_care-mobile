@@ -124,6 +124,23 @@ interface WatchDebugRepository {
     suspend fun stopTestSession()
 }
 
+// 개발자 모드에서 Pi 구현 상태를 단계별로 진단하기 위한 별도 Repository입니다.
+// 운영 공부 세션 저장, 워치 Data Layer, PiNetworkDataSource의 자동 연결 흐름을 호출하지 않습니다.
+interface PiDebugRepository {
+    fun observeDebugState(): Flow<PiDebugState>
+    suspend fun updateEndpoint(endpoint: PiDebugEndpoint)
+    suspend fun setConnectionMode(mode: PiDebugConnectionMode)
+    suspend fun readServerSpki()
+    suspend fun generatePairingJson()
+    suspend fun registerGeneratedPairingJson()
+    suspend fun discoverNsdCandidates()
+    suspend fun sendHello()
+    suspend fun startEyeOnlySession()
+    suspend fun startEyeWithSyntheticHrSession()
+    suspend fun sendSyntheticHeartRate()
+    suspend fun stopTestSession()
+}
+
 interface StudySessionRepository {
     fun observeSessionState(): Flow<StudySessionState>
     suspend fun startSession(mode: StudySessionMode = StudySessionMode.WatchAndEye)
