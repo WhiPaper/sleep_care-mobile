@@ -44,11 +44,17 @@ import com.sleepcare.mobile.domain.StudySessionRepository
 import com.sleepcare.mobile.domain.StudySessionState
 import com.sleepcare.mobile.domain.TrustedPiDevice
 import com.sleepcare.mobile.domain.UserGoals
+import com.sleepcare.mobile.domain.WatchCommandTargetPolicy
 import com.sleepcare.mobile.domain.WatchFlushPolicy
+import com.sleepcare.mobile.domain.WatchCursor
+import com.sleepcare.mobile.domain.WatchDebugRepository
+import com.sleepcare.mobile.domain.WatchDebugState
+import com.sleepcare.mobile.domain.WatchHeartRateBatch
 import com.sleepcare.mobile.domain.WatchSessionClosed
 import com.sleepcare.mobile.domain.WatchSessionConfig
 import com.sleepcare.mobile.domain.WatchSessionDataSource
 import com.sleepcare.mobile.domain.WatchSessionError
+import com.sleepcare.mobile.domain.WatchSessionEvent
 import com.sleepcare.mobile.domain.WatchSessionReady
 import com.sleepcare.mobile.data.source.HealthConnectSleepState
 import com.sleepcare.mobile.data.source.HealthConnectSleepDataSource
@@ -286,6 +292,186 @@ class DeviceConnectionRepositoryImpl @Inject constructor(
         preferencesStore.clearTrustedPiDevice()
     }
 }
+
+// 개발자 모드의 워치 통신 테스트는 실제 공부 세션/Pi 연결과 분리해 Data Layer만 직접 검증합니다.
+// 같은 WatchSessionDataSource를 쓰므로 capability 확인, 메시지 경로, codec 계약은 운영 경로와 동일합니다.
+@Singleton
+class WatchDebugRepositoryImpl @Inject constructor(
+    private val watchSessionDataSource: WatchSessionDataSource,
+) : WatchDebugRepository {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val debugState = MutableStateFlow(WatchDebugState())
+
+    init {
+        scope.launch {
+            watchSessionDataSource.observeSessionEvents().collect { event ->
+                val currentSessionId = debugState.value.sessionId ?: return@collect
+                if (event.sessionId != currentSessionId) return@collect
+                debugState.update { current ->
+                    current.copy(lastSessionEvent = event.toDebugSummary())
+                }
+            }
+        }
+        scope.launch {
+            watchSessionDataSource.observeHeartRateBatches().collect { batch ->
+                val currentSessionId = debugState.value.sessionId ?: return@collect
+                if (batch.sessionId != currentSessionId) return@collect
+                val latestSampleSeq = batch.samples.maxOfOrNull { it.sampleSeq } ?: batch.messageSequence
+                debugState.update { current ->
+                    current.copy(
+                        latestSampleSeq = maxOf(current.latestSampleSeq ?: 0L, latestSampleSeq),
+                        latestHeartRateSummary = batch.toDebugSummary(latestSampleSeq),
+                    )
+                }
+            }
+        }
+        scope.launch {
+            watchSessionDataSource.observeConnectionState().collect { connection ->
+                debugState.update { current ->
+                    current.copy(watchConnectionDetails = connection.details ?: connection.status.name)
+                }
+            }
+        }
+    }
+
+    override fun observeDebugState(): Flow<WatchDebugState> = debugState
+
+    override suspend fun refreshConnection() {
+        runWatchCommand("워치 연결 새로고침") {
+            watchSessionDataSource.refreshConnection()
+        }
+    }
+
+    override suspend fun startTestSession() {
+        val sessionId = "watch-debug-${LocalDate.now()}-${UUID.randomUUID().toString().take(8)}"
+        val currentConnectionDetails = debugState.value.watchConnectionDetails
+        debugState.value = WatchDebugState(
+            sessionId = sessionId,
+            commandInFlight = true,
+            lastCommandStatus = "워치 테스트 세션 시작 요청 중",
+            watchConnectionDetails = currentConnectionDetails,
+        )
+        // 개발자 테스트 세션은 Pi session.open이나 Room 저장을 거치지 않습니다.
+        // capability를 먼저 갱신한 뒤, capability 탐지가 실패해도 페어링된 Wear OS 노드로 보내 실제 수신 여부를 분리 진단합니다.
+        watchSessionDataSource.refreshConnection()
+        val success = watchSessionDataSource.startSession(
+            WatchSessionConfig(
+                sessionId = sessionId,
+                studyMode = "debug-watch",
+                hrRequired = true,
+                watchVibrationEnabled = true,
+            ),
+            targetPolicy = WatchCommandTargetPolicy.DebugAllowPairedFallback,
+        )
+        debugState.update { current ->
+            current.copy(
+                commandInFlight = false,
+                lastCommandStatus = if (success) {
+                    "워치 테스트 세션 시작 요청 전송됨 · ready/error 대기 중"
+                } else {
+                    "워치 테스트 세션 시작 실패"
+                },
+            )
+        }
+    }
+
+    override suspend fun sendFlushPolicy() {
+        withDebugSession("Flush policy 전송") { sessionId ->
+            watchSessionDataSource.updateFlushPolicy(
+                sessionId = sessionId,
+                flushPolicy = WatchFlushPolicy(normalSec = 15, suspectSec = 5, alertSec = 2),
+                targetPolicy = WatchCommandTargetPolicy.DebugAllowPairedFallback,
+            )
+        }
+    }
+
+    override suspend fun sendVibrationAlert() {
+        withDebugSession("진동 테스트 전송") { sessionId ->
+            watchSessionDataSource.sendVibrationAlert(
+                sessionId = sessionId,
+                level = 2,
+                pattern = "200,100,200",
+                targetPolicy = WatchCommandTargetPolicy.DebugAllowPairedFallback,
+            )
+        }
+    }
+
+    override suspend fun sendAck() {
+        withDebugSession("ACK 전송") { sessionId ->
+            val latestSampleSeq = debugState.value.latestSampleSeq ?: 0L
+            watchSessionDataSource.acknowledgeCursor(
+                WatchCursor(
+                    sessionId = sessionId,
+                    highestContiguousSampleSeq = latestSampleSeq,
+                    lastAckSentAt = LocalDateTime.now(),
+                ),
+                targetPolicy = WatchCommandTargetPolicy.DebugAllowPairedFallback,
+            )
+        }
+    }
+
+    override suspend fun requestBackfill() {
+        withDebugSession("Backfill 요청") { sessionId ->
+            val latestSampleSeq = debugState.value.latestSampleSeq
+            val fromSampleSeq = latestSampleSeq?.let { maxOf(1L, it - 2L) } ?: 1L
+            watchSessionDataSource.requestBackfill(
+                sessionId = sessionId,
+                fromSampleSeq = fromSampleSeq,
+                targetPolicy = WatchCommandTargetPolicy.DebugAllowPairedFallback,
+            )
+        }
+    }
+
+    override suspend fun stopTestSession() {
+        withDebugSession("테스트 세션 종료") { sessionId ->
+            watchSessionDataSource.stopSession(
+                sessionId = sessionId,
+                targetPolicy = WatchCommandTargetPolicy.DebugAllowPairedFallback,
+            )
+        }
+    }
+
+    private suspend fun withDebugSession(
+        label: String,
+        block: suspend (String) -> Boolean,
+    ) {
+        val sessionId = debugState.value.sessionId
+        if (sessionId == null) {
+            debugState.update { current -> current.copy(lastCommandStatus = "테스트 세션을 먼저 시작해 주세요.") }
+            return
+        }
+        runWatchCommand(label) { block(sessionId) }
+    }
+
+    private suspend fun runWatchCommand(
+        label: String,
+        block: suspend () -> Boolean,
+    ) {
+        debugState.update { current ->
+            current.copy(commandInFlight = true, lastCommandStatus = "$label 요청 중")
+        }
+        val success = runCatching { block() }.getOrDefault(false)
+        debugState.update { current ->
+            current.copy(
+                commandInFlight = false,
+                lastCommandStatus = if (success) "$label 성공" else "$label 실패",
+            )
+        }
+    }
+}
+
+private fun WatchSessionEvent.toDebugSummary(): String = when (this) {
+    is WatchSessionReady -> "session.ready · ${sensorBackend} · $trackerMode"
+    is WatchSessionError -> "session.error · $code · $detailMessage"
+    is WatchSessionClosed -> buildString {
+        append("session.closed · ")
+        append(reason)
+        finalSampleSeq?.let { append(" · final sample $it") }
+    }
+}
+
+private fun WatchHeartRateBatch.toDebugSummary(latestSampleSeq: Long): String =
+    "HR ${samples.size}개 · $deliveryMode · latest sample $latestSampleSeq"
 
 // 공부 세션의 오케스트레이터입니다.
 // 워치 센서 시작, Pi 세션 열기, 심박 샘플 릴레이, 알림 진동, 세션 요약 저장을 한곳에서 조율합니다.
@@ -701,6 +887,12 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun updateNotificationPreferences(preferences: NotificationPreferences) {
         preferencesStore.updateNotificationPreferences(preferences)
+    }
+
+    override fun observeDeveloperModeEnabled(): Flow<Boolean> = preferencesStore.developerModeEnabled
+
+    override suspend fun setDeveloperModeEnabled(enabled: Boolean) {
+        preferencesStore.setDeveloperModeEnabled(enabled)
     }
 
     override fun observeUserGoals(): Flow<UserGoals> = preferencesStore.userGoals

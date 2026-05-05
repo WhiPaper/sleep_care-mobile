@@ -10,6 +10,9 @@
 - 홈 화면에서 공부 시작/종료, 세션 타이머, Pi 기반 실시간 위험 상태를 표시한다.
 - `drowsiness_events`, `study_sessions`는 실제 Pi 이벤트를 저장한다.
 - `:watch-contracts` 기준으로 Wear OS Data Layer 연결 상태, 워치 세션 시작/중지, `session.ready / error / closed`, 심박 샘플 큐/커서, `hr.ingest` 중계 경로를 구현했다.
+- Pi QR 인식이 실패하는 현장 상황을 위해 pairing JSON을 직접 붙여 넣어 기존 QR 검증/등록 경로로 저장할 수 있다.
+- 설정의 개발자 모드를 켜면 Pi 공부 세션 없이 폰 ↔ 워치 Data Layer 명령 전체를 기기 연결 화면에서 테스트할 수 있다.
+- 워치 Data Layer 전달을 위해 폰/워치 런타임 `applicationId`는 `com.sleepcare.mobile`로 맞추고, 워치 Kotlin `namespace`만 `com.sleepcare.watch`로 유지한다.
 - 실제 수면 데이터는 Health Connect 기반으로 읽고, 홈/분석/설정 화면에서 권한 없음/미지원/업데이트 필요/데이터 없음 상태를 구분한다.
 - 설정 화면에서 Health Connect 수면 읽기 권한을 직접 요청할 수 있고, 앱 manifest에는 `android.permission.health.READ_SLEEP`를 선언했다.
 - Health Connect 앱에서 이 앱이 노출되도록 onboarding activity, rationale activity, provider query를 manifest에 반영했다.
@@ -56,12 +59,20 @@
 - 로컬 네트워크(NSD + WSS)
 - 모바일 앱은 파이 서비스 발견과 WebSocket 클라이언트 역할을 담당한다.
 - 현재 구현 범위는 `hello`, `session.open`, `risk.update`, `alert.fire`, `session.close`, `session.summary`, `ping/pong`이다.
-- 보안은 앱 리소스에 포함된 Pi 인증서를 신뢰하는 방식으로 고정한다.
+- 보안은 QR로 등록한 Pi 인증서 public key의 SPKI SHA-256 fingerprint를 pin으로 저장하고 WSS 연결 시 대조한다.
+- QR 스캔이 어려울 때는 `sleepcare-pair-v1` JSON payload를 직접 입력해 같은 `PiPairingCodec` 검증을 거쳐 등록한다.
 
 ### 워치 연동
 - Wear OS Data Layer
 - Galaxy Watch + Samsung Health Sensor SDK 조합을 기준으로 한다.
+- Data Layer가 워치 앱 listener까지 메시지를 전달하려면 폰/워치 `applicationId`와 signing key가 모두 같아야 한다.
+- capability는 `sleepcare_watch_session_runtime`을 제공하는 워치 앱 노드를 고르는 필터이며, package/signature 정합성 조건을 대신하지 않는다.
 - 모바일 앱은 워치 연결 상태, ACK 커서, 백필 요청, `hr.ingest`, 진동 경고 요청을 지원하도록 확장한다.
+- 개발자 모드의 워치 통신 테스트는 `start`, `stop`, `flush policy`, `vibration`, `ack`, `backfill`을 Pi 없이 전송해 워치 앱 readiness와 Data Layer 계약을 검증한다.
+- 운영 공부 세션은 `sleepcare_watch_session_runtime` capability가 확인된 워치 앱 노드에만 명령을 보낸다.
+- 개발자 모드 워치 테스트는 capability를 먼저 사용하되, capability discovery 문제가 의심될 때 페어링된 Wear OS 노드로 직접 전송해 Data Layer 연결과 워치 앱 수신 여부를 분리 진단한다.
+- 폰의 전송 성공은 워치 앱 수신 확인이 아니므로, 워치 앱 설정 화면의 `Message Log`와 `adb logcat -s SleepCareWatch`로 listener 수신/서비스 처리/ready 회신 단계를 함께 확인한다.
+- 기존 워치 debug 패키지 `com.sleepcare.watch`가 남아 있으면 테스트 대상이 헷갈릴 수 있으므로 새 APK 설치 전 `adb -s <watch> uninstall com.sleepcare.watch`로 제거한다.
 
 ### 수면 데이터 연동
 - Health Connect 기반 실제 연동을 사용한다.
@@ -117,6 +128,8 @@
 - 공부 세션은 홈 카드에서 `워치 포함` 또는 `Eye only` 모드를 선택해 시작한다.
 - 워치 포함 모드는 `ArmingWatch -> OpeningSession -> Running` 전이를 사용하고, 워치 `ready` 전에는 Pi 세션을 열지 않는다.
 - Eye only 모드는 워치 handshake를 생략하고 Pi 카메라 세션을 바로 준비하며, 자동 fallback이 아니라 사용자가 명시적으로 선택한 경우에만 동작한다.
+- 개발자 모드 워치 테스트는 운영 공부 세션으로 저장하지 않고 Pi `session.open`도 보내지 않는다.
+- 개발자 모드의 paired-node fallback은 테스트 카드 전용이며, 운영 공부 세션의 capability-only 정책을 대체하지 않는다.
 
 ## 협업 논의 포인트
 - 홈 화면 핵심 카드 우선순위

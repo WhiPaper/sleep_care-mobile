@@ -5,6 +5,7 @@
 - 1차 대상은 **Galaxy Watch + Samsung Health Sensor SDK** 로 확정했다.
 - 워치 앱은 `Connection Waiting -> Active Session -> Alerting -> Watch Settings` 흐름, `WearableListenerService`, foreground tracking service 스캐폴드를 갖췄다.
 - 모바일 앱은 Wear OS Data Layer 기반 연결/ACK/백필, `session.ready / error / closed`, `hr.ingest` 중계 구조를 반영했다.
+- Data Layer 전달 조건을 맞추기 위해 워치 앱의 런타임 `applicationId`는 폰 앱과 같은 `com.sleepcare.mobile`을 사용하고, Kotlin `namespace`는 `com.sleepcare.watch`로 유지한다.
 - Samsung Health Sensor SDK AAR은 아직 워크스페이스에 연결되지 않아 현재 센서 백엔드는 build-safe placeholder 구현으로 둔다.
 
 ## 목표
@@ -21,6 +22,8 @@
 
 ## 기술 방향
 - 워치와 모바일 앱 간 실시간 통신은 Wear OS Data Layer를 기준으로 설계한다.
+- Wear OS Data Layer는 폰/워치 앱의 `applicationId`와 signing key가 같아야 listener 전달이 가능하다. capability는 대상 노드 필터이며 이 보안 조건을 대신하지 않는다.
+- 워치 앱이 열린 상태에서는 `MessageClient.addListener` live listener도 같이 붙여 manifest listener 기동 문제와 실제 메시지 수신 문제를 분리 진단한다.
 - 심박/IBI 접근은 **Samsung Health Sensor SDK** 를 사용한다.
 - 수면 기록은 워치 앱 구현 범위와 함께 연동 경로를 검토한다.
 - 워치 앱 범위는 실시간 세션 연동과 최소한의 센서 파이프라인 검증에 우선 집중한다.
@@ -54,6 +57,7 @@
 - 제조사별 센서 제약
 - 백그라운드 동기화 제한
 - 배터리 소모 최소화
+- 기존 워치 debug 패키지 `com.sleepcare.watch`가 남아 있으면 통합 테스트가 헷갈릴 수 있으므로 새 watch APK 설치 전 수동 삭제가 필요할 수 있다.
 
 ## 협업 논의 포인트
 - Samsung Health Sensor SDK AAR 배치 방식 결정

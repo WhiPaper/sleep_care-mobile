@@ -138,6 +138,12 @@ flowchart LR
 - **DataClient**: 지속 상태 동기화, 현재 세션 상태 공유
 - **ChannelClient**: 세션 종료 후 대용량 백필 또는 덤프 전송
 
+#### Data Layer 앱 정합성 조건
+- 폰 앱과 워치 앱은 같은 런타임 `applicationId`와 같은 signing key로 빌드되어야 같은 Wear OS Data Layer 애플리케이션으로 묶인다.
+- 현재 구현은 폰 앱 데이터를 보존하기 위해 폰 앱 `applicationId`인 `com.sleepcare.mobile`을 기준으로 워치 앱 `applicationId`를 맞춘다.
+- 워치 모듈의 Kotlin `namespace`는 `com.sleepcare.watch`로 유지한다. 이는 코드 패키지/R 경로를 보존하기 위한 빌드 네임스페이스이며 Data Layer 전달 보안 조건과는 별도다.
+- `sleepcare_watch_session_runtime` capability는 메시지를 받을 수 있는 워치 앱 노드를 고르는 필터일 뿐, package/signature 불일치를 우회하지 않는다.
+
 ### 6.2 폰 ↔ 라즈베리파이
 
 #### 채택 기술
@@ -539,7 +545,7 @@ device_id=deskpi-a1
 
 ## 15. 실제 메시지 흐름도
 
-모바일 앱은 현재 `15.1`의 워치 경로를 반영했고, 워치 앱도 companion 스캐폴드 기준의 `session.ready / error / close` 응답 경로를 포함한다. 다만 실제 센서 수집은 Samsung Health Sensor SDK AAR 연결 이후 실기기 검증이 필요하다.
+모바일 앱은 현재 `15.1`의 워치 경로를 반영했고, 워치 앱도 companion 스캐폴드 기준의 `session.ready / error / close` 응답 경로를 포함한다. 설정의 개발자 모드를 켜면 Pi 공부 세션 없이 폰 ↔ 워치 Data Layer만 따로 테스트할 수 있다. 다만 실제 센서 수집은 Samsung Health Sensor SDK AAR 연결 이후 실기기 검증이 필요하다.
 
 ### 15.1 정상 시나리오
 
@@ -596,7 +602,20 @@ sequenceDiagram
     P->>R: replay hr.ingest
 ```
 
-### 15.3 폰-파이 끊김 복구
+### 15.3 개발자 모드 워치 단독 테스트
+
+- 목적: Pi WSS 연결과 운영 공부 세션 저장 없이 Wear OS Data Layer 계약만 검증한다.
+- 노출: 설정에서 개발자 모드를 켠 경우에만 기기 연결 화면에 테스트 카드가 표시된다.
+- 명령: `/ctl/start`, `/ctl/flush_policy`, `/alert/vibrate`, `/hr/ack`, `/ctl/backfill`, `/ctl/stop`을 수동 전송한다.
+- 세션 ID: `watch-debug-<date>-<random>` 형식을 사용하며 Room `study_sessions`와 Pi `session.open`에는 반영하지 않는다.
+- 수신: `session.ready / session.error / session.closed`와 `hr.live / hr.batch`만 카드 상태에 표시한다.
+- 앱 정합성: 개발자 테스트와 운영 세션 모두 폰/워치 `applicationId` 및 signing key가 같아야 워치 listener까지 메시지가 도달한다. debug 빌드는 같은 개발 환경의 debug key를 쓰고, release 배포 전에는 release signing key도 반드시 맞춘다.
+- 대상 노드: 운영 공부 세션은 `sleepcare_watch_session_runtime` capability가 확인된 노드에만 보낸다. 개발자 모드 테스트는 capability를 먼저 사용하고, 실패하면 페어링된 Wear OS 노드로 직접 보내 capability discovery 문제와 실제 메시지 수신 문제를 분리한다.
+- 제한: paired-node fallback은 개발자 테스트 카드 전용 진단 경로이며, 운영 세션의 워치 포함 시작 조건을 완화하지 않는다.
+- 진단: 폰의 전송 성공은 Wear OS 노드 전송 요청 성공을 뜻한다. 워치 앱 수신 여부는 워치 설정 화면의 `Message Log` 또는 `adb logcat -s SleepCareWatch`에서 `/ctl/start`, `/hr/ack`, `/alert/vibrate` 등 path 수신과 서비스 처리 로그로 확인한다. 워치 앱 화면이 열린 경우에는 live listener도 같은 라우터로 수신해 manifest listener 기동 문제를 함께 분리한다.
+- 설치 확인: 이전 워치 debug 패키지 `com.sleepcare.watch`가 기기에 남아 있으면 혼동될 수 있으므로 `adb -s <watch> uninstall com.sleepcare.watch` 후 새 워치 APK를 설치한다.
+
+### 15.4 폰-파이 끊김 복구
 
 ```mermaid
 sequenceDiagram
@@ -775,6 +794,7 @@ stateDiagram-v2
 - 최초 등록은 QR 기반으로 진행한다.
 - QR payload와 Pi 개발 요구사항은 [pi-qr-pairing.md](./pi-qr-pairing.md)를 기준으로 한다.
 - 앱은 QR의 `device_id`, `service`, `ws`, `spki_sha256`을 신뢰 정보로 저장한다.
+- 카메라가 QR을 인식하지 못하는 경우에도 같은 JSON payload를 수동 입력해 동일한 검증/저장 경로로 등록할 수 있다.
 
 ### 19.2 네트워크 보안
 - `WSS` 사용

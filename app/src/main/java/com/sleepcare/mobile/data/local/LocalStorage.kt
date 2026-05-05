@@ -333,6 +333,7 @@ class PreferencesStore(private val context: Context) {
         val sleepSyncedAt = stringPreferencesKey("sleep_synced_at")
         val drowsinessSyncedAt = stringPreferencesKey("drowsiness_synced_at")
         val trustedPiDevice = stringPreferencesKey("trusted_pi_device")
+        val developerModeEnabled = booleanPreferencesKey("developer_mode_enabled")
     }
 
     val onboardingState: Flow<OnboardingState> = context.dataStore.safeData()
@@ -366,6 +367,9 @@ class PreferencesStore(private val context: Context) {
         .map { preferences ->
             preferences[Keys.trustedPiDevice]?.let(PiPairingCodec::parseTrustedDevice)
         }
+
+    val developerModeEnabled: Flow<Boolean> = context.dataStore.safeData()
+        .map { preferences -> preferences[Keys.developerModeEnabled] ?: false }
 
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { it[Keys.onboardingCompleted] = completed }
@@ -416,6 +420,12 @@ class PreferencesStore(private val context: Context) {
 
     suspend fun clearTrustedPiDevice() {
         context.dataStore.edit { it.remove(Keys.trustedPiDevice) }
+    }
+
+    suspend fun setDeveloperModeEnabled(enabled: Boolean) {
+        // 개발자 모드는 DataStore의 작은 토글로만 관리합니다.
+        // clear()가 호출되면 기본값 false로 돌아가 운영 화면에 테스트 카드가 남지 않습니다.
+        context.dataStore.edit { it[Keys.developerModeEnabled] = enabled }
     }
 
     suspend fun clear() {

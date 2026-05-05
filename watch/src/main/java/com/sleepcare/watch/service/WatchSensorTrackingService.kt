@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.sleepcare.watch.contracts.WatchCursor
 import com.sleepcare.watch.contracts.WatchFlushPolicy
@@ -40,6 +41,7 @@ class WatchSensorTrackingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // WearableListenerService나 워치 UI에서 보낸 action을 세션 동작으로 분기합니다.
+        Log.d(TAG, "service onStartCommand action=${intent?.action ?: "null"}, sid=${intent?.let { resolveSessionId(it) } ?: "none"}")
         when (intent?.action) {
             WatchSessionIntents.ACTION_START_SESSION -> handleStart(intent)
             WatchSessionIntents.ACTION_STOP_SESSION -> handleStop(intent)
@@ -65,9 +67,12 @@ class WatchSensorTrackingService : Service() {
     private fun handleStart(intent: Intent) {
         val config = resolveConfig(intent)
         if (config == null) {
+            val fallbackSessionId = intent.getStringExtra(WatchSessionIntents.EXTRA_SESSION_ID) ?: "unknown-session"
+            WatchSessionStore.recordCommandError("start invalid_config", fallbackSessionId, "payload parse failed")
+            Log.d(TAG, "start invalid_config sid=$fallbackSessionId")
             serviceScope.launch {
                 sendSessionError(
-                    sessionId = intent.getStringExtra(WatchSessionIntents.EXTRA_SESSION_ID) ?: "unknown-session",
+                    sessionId = fallbackSessionId,
                     code = "invalid_config",
                     message = "Unable to parse session start payload.",
                     recoverable = false,
@@ -81,6 +86,12 @@ class WatchSensorTrackingService : Service() {
             ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
         }
         if (missingPermissions.isNotEmpty()) {
+            WatchSessionStore.recordCommandError(
+                label = "start permission_required",
+                sessionId = config.sessionId,
+                detail = missingPermissions.toReadableNames(),
+            )
+            Log.d(TAG, "start permission_required sid=${config.sessionId}, missing=${missingPermissions.toReadableNames()}")
             serviceScope.launch {
                 // 워치 앱을 먼저 열어 권한을 승인해야 하는 상황을 모바일에 명확히 알려 줍니다.
                 sendSessionError(
@@ -96,6 +107,8 @@ class WatchSensorTrackingService : Service() {
         }
 
         // 센서 수집은 백그라운드 제한을 피하기 위해 foreground service로 유지합니다.
+        WatchSessionStore.recordCommandHandled("start config parsed", config.sessionId)
+        Log.d(TAG, "start config parsed sid=${config.sessionId}, mode=${config.studyMode}")
         val foregroundStarted = runCatching {
             startForeground(
                 WatchNotification.NOTIFICATION_ID,
@@ -107,12 +120,15 @@ class WatchSensorTrackingService : Service() {
             )
         }
         foregroundStarted.onFailure { throwable ->
+            val detail = throwable.message ?: throwable::class.java.simpleName
+            WatchSessionStore.recordCommandError("foreground service failed", config.sessionId, detail)
+            Log.d(TAG, "foreground service failed sid=${config.sessionId}", throwable)
             serviceScope.launch {
                 // health foreground service 조건이 맞지 않으면 ready 타임아웃 대신 원인을 회신합니다.
                 sendSessionError(
                     sessionId = config.sessionId,
                     code = "foreground_service_failed",
-                    message = throwable.message ?: "Unable to start watch foreground service.",
+                    message = detail,
                     recoverable = true,
                 )
             }
@@ -122,11 +138,15 @@ class WatchSensorTrackingService : Service() {
         }
 
         serviceScope.launch {
+            WatchSessionStore.recordCommandHandled("foreground started", config.sessionId)
             startSessionInternal(config)
         }
     }
 
     private fun handleStop(intent: Intent) {
+        val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId
+        WatchSessionStore.recordCommandHandled("stop command", sessionId)
+        Log.d(TAG, "stop command sid=${sessionId ?: "none"}")
         serviceScope.launch {
             stopSessionInternal(
                 reason = intent.getStringExtra(WatchSessionIntents.EXTRA_REASON) ?: "phone_stop",
@@ -136,40 +156,84 @@ class WatchSensorTrackingService : Service() {
     }
 
     private fun handleFlushPolicy(intent: Intent) {
-        val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId ?: return
-        val policy = resolveFlushPolicy(intent) ?: return
+        val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId
+        if (sessionId == null) {
+            WatchSessionStore.recordCommandError("flush missing session", detail = "sid not found")
+            Log.d(TAG, "flush missing session")
+            return
+        }
+        val policy = resolveFlushPolicy(intent)
+        if (policy == null) {
+            WatchSessionStore.recordCommandError("flush invalid payload", sessionId, "policy parse failed")
+            Log.d(TAG, "flush invalid payload sid=$sessionId")
+            return
+        }
         currentConfig = currentConfig?.copy(sessionId = sessionId, flushPolicy = policy) ?: WatchSessionConfig(
             sessionId = sessionId,
             flushPolicy = policy,
         )
         WatchSessionStore.updateFlushPolicy(policy)
+        WatchSessionStore.recordCommandHandled(
+            label = "flush ${policy.normalSec}/${policy.suspectSec}/${policy.alertSec}",
+            sessionId = sessionId,
+        )
+        Log.d(TAG, "flush policy updated sid=$sessionId, policy=$policy")
         serviceScope.launch {
             backend.updateFlushPolicy(policy)
         }
     }
 
     private fun handleBackfill(intent: Intent) {
-        val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId ?: return
-        val fromSampleSeq = resolveBackfillFrom(intent) ?: return
+        val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId
+        if (sessionId == null) {
+            WatchSessionStore.recordCommandError("backfill missing session", detail = "sid not found")
+            Log.d(TAG, "backfill missing session")
+            return
+        }
+        val fromSampleSeq = resolveBackfillFrom(intent)
+        if (fromSampleSeq == null) {
+            WatchSessionStore.recordCommandError("backfill invalid payload", sessionId, "fromSampleSeq missing")
+            Log.d(TAG, "backfill invalid payload sid=$sessionId")
+            return
+        }
+        WatchSessionStore.recordCommandHandled("backfill from=$fromSampleSeq", sessionId)
+        Log.d(TAG, "backfill requested sid=$sessionId, from=$fromSampleSeq")
         serviceScope.launch {
             // 휴대폰이 누락을 감지한 sampleSeq부터 버퍼에 남은 샘플을 배치로 다시 보냅니다.
             val samples = buffer.fromSequence(sessionId, fromSampleSeq)
-            if (samples.isEmpty()) return@launch
+            if (samples.isEmpty()) {
+                WatchSessionStore.recordCommandHandled("backfill empty", sessionId)
+                Log.d(TAG, "backfill empty sid=$sessionId, from=$fromSampleSeq")
+                return@launch
+            }
             val batch = WatchHeartRateBatch(
                 sessionId = sessionId,
                 messageSequence = samples.maxOf { it.messageSequence },
                 deliveryMode = "backfill",
                 samples = samples,
             )
-            messenger.send(WatchPaths.HrBatch, WatchSessionIntents.buildBatchPayload(batch))
+            val sent = messenger.send(WatchPaths.HrBatch, WatchSessionIntents.buildBatchPayload(batch))
+            if (sent) {
+                WatchSessionStore.recordCommandHandled("backfill sent ${samples.size}", sessionId)
+            } else {
+                WatchSessionStore.recordCommandError("backfill send failed", sessionId)
+            }
+            Log.d(TAG, "backfill send result sid=$sessionId, count=${samples.size}, sent=$sent")
         }
     }
 
     private fun handleAlert(intent: Intent) {
-        val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId ?: return
+        val sessionId = resolveSessionId(intent) ?: currentConfig?.sessionId
+        if (sessionId == null) {
+            WatchSessionStore.recordCommandError("vibrate missing session", detail = "sid not found")
+            Log.d(TAG, "vibrate missing session")
+            return
+        }
         val level = intent.getIntExtra(WatchSessionIntents.EXTRA_LEVEL, 3)
         val pattern = intent.getStringExtra(WatchSessionIntents.EXTRA_PATTERN) ?: "pulse"
         val reason = intent.getStringExtra(WatchSessionIntents.EXTRA_REASON) ?: "Drowsiness risk"
+        WatchSessionStore.recordCommandHandled("vibrate level=$level", sessionId)
+        Log.d(TAG, "vibrate command sid=$sessionId, level=$level, pattern=$pattern")
         WatchSessionStore.markAlerting(
             badge = "${level * 30}% vigilance drop",
             body = reason,
@@ -178,12 +242,16 @@ class WatchSensorTrackingService : Service() {
     }
 
     private fun handleDismissAlert() {
+        WatchSessionStore.recordCommandHandled("dismiss alert")
+        Log.d(TAG, "dismiss alert")
         WatchSessionStore.dismissAlert()
     }
 
     private suspend fun startSessionInternal(config: WatchSessionConfig) {
         currentConfig = config
         trackingStarted = true
+        WatchSessionStore.recordCommandHandled("backend start requested", config.sessionId)
+        Log.d(TAG, "backend start requested sid=${config.sessionId}")
         WatchSessionStore.startDemoSession(config.sessionId)
         WatchSessionStore.updateFlushPolicy(config.flushPolicy)
 
@@ -195,6 +263,8 @@ class WatchSensorTrackingService : Service() {
 
         // 센서 백엔드가 시작되지 못하면 즉시 휴대폰에 recoverable 오류를 알립니다.
         if (!startResult.started) {
+            WatchSessionStore.recordCommandError("backend_start_failed", config.sessionId, startResult.message)
+            Log.d(TAG, "backend start failed sid=${config.sessionId}, message=${startResult.message}")
             sendSessionError(
                 sessionId = config.sessionId,
                 code = "backend_start_failed",
@@ -206,10 +276,17 @@ class WatchSensorTrackingService : Service() {
             return
         }
 
-        messenger.send(
+        WatchSessionStore.recordCommandHandled("backend started", config.sessionId)
+        val readySent = messenger.send(
             WatchPaths.SessionReady,
             WatchSessionIntents.buildSessionReadyPayload(config.sessionId),
         )
+        if (readySent) {
+            WatchSessionStore.recordCommandHandled("session.ready sent", config.sessionId)
+        } else {
+            WatchSessionStore.recordCommandError("session.ready send failed", config.sessionId)
+        }
+        Log.d(TAG, "session.ready send result sid=${config.sessionId}, sent=$readySent")
     }
 
     private suspend fun stopSessionInternal(
@@ -227,7 +304,7 @@ class WatchSensorTrackingService : Service() {
         if (sessionId != null) {
             if (notifyPhone) {
                 // 정상 종료일 때는 마지막 sampleSeq를 함께 보내 모바일 커서 정리를 돕습니다.
-                messenger.send(
+                val closedSent = messenger.send(
                     WatchPaths.SessionClosed,
                     WatchSessionIntents.buildSessionClosedPayload(
                         sessionId = sessionId,
@@ -235,6 +312,12 @@ class WatchSensorTrackingService : Service() {
                         finalSampleSeq = buffer.snapshot(sessionId).maxOfOrNull { it.sampleSeq },
                     ),
                 )
+                if (closedSent) {
+                    WatchSessionStore.recordCommandHandled("session.closed sent", sessionId)
+                } else {
+                    WatchSessionStore.recordCommandError("session.closed send failed", sessionId)
+                }
+                Log.d(TAG, "session.closed send result sid=$sessionId, sent=$closedSent")
             }
             buffer.clear(sessionId)
         }
@@ -249,7 +332,8 @@ class WatchSensorTrackingService : Service() {
         buffer.append(sample)
         WatchSessionStore.updateHeartRate(sample)
         // MVP에서는 실시간 live 샘플을 우선 전송하고, 누락 시 backfill로 보완합니다.
-        messenger.send(WatchPaths.HrLive, WatchSessionIntents.buildLiveSamplePayload(sample))
+        val sent = messenger.send(WatchPaths.HrLive, WatchSessionIntents.buildLiveSamplePayload(sample))
+        Log.d(TAG, "hr live send result sid=${sample.sessionId}, seq=${sample.sampleSeq}, sent=$sent")
     }
 
     private suspend fun sendSessionError(
@@ -258,10 +342,16 @@ class WatchSensorTrackingService : Service() {
         message: String,
         recoverable: Boolean,
     ) {
-        messenger.send(
+        val sent = messenger.send(
             WatchPaths.SessionError,
             WatchSessionIntents.buildSessionErrorPayload(sessionId, code, message, recoverable),
         )
+        if (sent) {
+            WatchSessionStore.recordCommandHandled("session.error sent $code", sessionId)
+        } else {
+            WatchSessionStore.recordCommandError("session.error send failed $code", sessionId)
+        }
+        Log.d(TAG, "session.error send result sid=$sessionId, code=$code, sent=$sent")
     }
 
     private fun resolveConfig(intent: Intent): WatchSessionConfig? {
@@ -372,6 +462,8 @@ class WatchSensorTrackingService : Service() {
         fun dismissAlert(context: Context) {
             WatchSessionIntents.startForegroundService(context, WatchSessionIntents.dismissAlert(context))
         }
+
+        private const val TAG = "SleepCareWatch"
     }
 }
 

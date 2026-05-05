@@ -56,6 +56,7 @@ private const val HEALTH_CONNECT_PROVIDER_PACKAGE_NAME = "com.google.android.app
 // 설정 화면에 필요한 알림 설정, 동기화 문구, Health Connect 권한 상태입니다.
 data class SettingsUiState(
     val preferences: NotificationPreferences = NotificationPreferences(),
+    val developerModeEnabled: Boolean = false,
     val lastSyncText: String = "Health Connect 수면 동기화 대기 중",
     val canRequestHealthConnectPermission: Boolean = false,
     val healthConnectState: HealthConnectSleepState = HealthConnectSleepState.Checking,
@@ -121,6 +122,14 @@ fun SettingsScreen(
                 onCheckedChange = {
                     viewModel.updatePreferences(uiState.preferences.copy(sleepRemindersEnabled = it))
                 },
+            )
+        }
+        item {
+            SettingSwitchCard(
+                title = "개발자 모드",
+                description = "기기 연결 화면에서 Pi 없이 워치 Data Layer 통신을 직접 테스트합니다.",
+                checked = uiState.developerModeEnabled,
+                onCheckedChange = viewModel::setDeveloperModeEnabled,
             )
         }
         item {
@@ -243,9 +252,11 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.observeNotificationPreferences(),
         settingsRepository.observeLastSyncState(),
         sleepDataSource.state,
-    ) { preferences, lastSync, sleepState ->
+        settingsRepository.observeDeveloperModeEnabled(),
+    ) { preferences, lastSync, sleepState, developerModeEnabled ->
         SettingsUiState(
             preferences = preferences,
+            developerModeEnabled = developerModeEnabled,
             lastSyncText = buildString {
                 append(
                     if (lastSync.drowsinessSyncedAt != null) {
@@ -264,6 +275,12 @@ class SettingsViewModel @Inject constructor(
     fun updatePreferences(preferences: NotificationPreferences) {
         viewModelScope.launch {
             settingsRepository.updateNotificationPreferences(preferences)
+        }
+    }
+
+    fun setDeveloperModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setDeveloperModeEnabled(enabled)
         }
     }
 

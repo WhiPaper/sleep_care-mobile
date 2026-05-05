@@ -19,6 +19,7 @@ import com.sleepcare.mobile.data.repository.SleepCareRecommendationEngine
 import com.sleepcare.mobile.data.repository.SleepRepositoryImpl
 import com.sleepcare.mobile.data.repository.StudyPlanRepositoryImpl
 import com.sleepcare.mobile.data.repository.StudySessionRepositoryImpl
+import com.sleepcare.mobile.data.repository.WatchDebugRepositoryImpl
 import com.sleepcare.mobile.data.source.GalaxyWatchSessionDataSource
 import com.sleepcare.mobile.data.source.HealthConnectSleepDataSource
 import com.sleepcare.mobile.data.source.PiNetworkDataSourceImpl
@@ -32,6 +33,7 @@ import com.sleepcare.mobile.domain.SettingsRepository
 import com.sleepcare.mobile.domain.SleepRepository
 import com.sleepcare.mobile.domain.StudyPlanRepository
 import com.sleepcare.mobile.domain.StudySessionRepository
+import com.sleepcare.mobile.domain.WatchDebugRepository
 import com.sleepcare.mobile.domain.WatchSessionDataSource
 import com.sleepcare.mobile.domain.WatchSleepDataSource
 import dagger.Binds
@@ -130,4 +132,7 @@ abstract class AppBindsModule {
 
     @Binds
     abstract fun bindStudySessionRepository(impl: StudySessionRepositoryImpl): StudySessionRepository
+
+    @Binds
+    abstract fun bindWatchDebugRepository(impl: WatchDebugRepositoryImpl): WatchDebugRepository
 }

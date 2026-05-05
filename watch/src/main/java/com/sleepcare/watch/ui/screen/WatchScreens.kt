@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CheckCircle
@@ -29,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,9 +45,10 @@ import androidx.wear.compose.material.Text
 import com.sleepcare.watch.model.WatchUiState
 
 // Wear OS 원형/소형 화면에 맞춘 워치 전용 Compose 화면 모음입니다.
-private val ScreenHorizontalPadding = 4.dp
-private val QuickActionSize = 40.dp
-private val OrbSize = 84.dp
+private val ScreenHorizontalPadding = 14.dp
+private val ScreenVerticalPadding = 28.dp
+private val QuickActionSize = 36.dp
+private val OrbSize = 64.dp
 
 // 휴대폰에서 세션 시작 명령이 오기 전 대기 화면입니다.
 @Composable
@@ -54,8 +59,6 @@ fun ConnectionWaitingScreen(
     onRetryConnection: () -> Unit,
 ) {
     ScreenContainer {
-        BrandLine()
-        Spacer(Modifier.height(6.dp))
         StatusOrb(
             icon = Icons.Filled.WifiOff,
             iconTint = MaterialTheme.colors.primary,
@@ -63,17 +66,16 @@ fun ConnectionWaitingScreen(
             subtitle = state.connectionSubtitle,
             badge = state.connectionBadge,
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         Chip(
             onClick = onStartDemoSession,
             label = { Text("Open Session") },
-            secondaryLabel = { Text("Start watch runtime") },
             colors = ChipDefaults.primaryChipColors(),
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SmallActionChip(text = "Retry", icon = Icons.Filled.Refresh, onClick = onRetryConnection)
-            SmallActionChip(text = "Settings", icon = Icons.Filled.Settings, onClick = onOpenSettings)
+            IconAction(Icons.Filled.Refresh, "Retry", onRetryConnection)
+            IconAction(Icons.Filled.Settings, "Settings", onOpenSettings)
         }
     }
 }
@@ -90,7 +92,7 @@ fun ActiveSessionScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             StatusPill(text = "SENSOR", icon = Icons.Filled.Bluetooth, active = true)
             Spacer(Modifier.weight(1f))
-            IconAction(Icons.Filled.Settings, onOpenSettings)
+            IconAction(Icons.Filled.Settings, "Settings", onOpenSettings)
         }
         Spacer(Modifier.height(10.dp))
         Box(
@@ -139,8 +141,8 @@ fun ActiveSessionScreen(
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SmallActionChip(text = "Alert", icon = Icons.Filled.NotificationsActive, onClick = onTriggerAlert)
-            SmallActionChip(text = "Stop", icon = Icons.Filled.DirectionsRun, onClick = onStopSession)
+            IconAction(Icons.Filled.NotificationsActive, "Alert", onTriggerAlert)
+            IconAction(Icons.Filled.DirectionsRun, "Stop", onStopSession)
         }
     }
 }
@@ -152,8 +154,6 @@ fun AlertingScreen(
     onDismiss: () -> Unit,
 ) {
     ScreenContainer {
-        BrandLine()
-        Spacer(Modifier.height(8.dp))
         StatusOrb(
             icon = Icons.Filled.NotificationsActive,
             iconTint = Color(0xFFBDC2FF),
@@ -200,23 +200,64 @@ fun WatchSettingsScreen(
                 icon = Icons.Filled.SignalCellularAlt,
                 onClick = onBackToSession,
             )
+            Spacer(Modifier.height(8.dp))
+            MessageLogBox(logItems = state.messageLog)
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            IconAction(Icons.Filled.WifiOff, onBackToConnection)
-            IconAction(Icons.Filled.DirectionsRun, onBackToSession)
-            IconAction(Icons.Filled.Settings, onBackToConnection)
+            IconAction(Icons.Filled.WifiOff, "Connection", onBackToConnection)
+            IconAction(Icons.Filled.DirectionsRun, "Session", onBackToSession)
+            IconAction(Icons.Filled.Settings, "Settings", onBackToConnection)
         }
     }
 }
 
-// 모든 워치 화면을 중앙 정렬하는 공통 컨테이너입니다.
+// 폰에서 보낸 메시지가 워치 listener까지 도착했는지 현장에서 확인하기 위한 최근 수신 로그입니다.
+@Composable
+private fun MessageLogBox(logItems: List<String>) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF1A1C1D))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(
+                text = "Message Log",
+                color = MaterialTheme.colors.onSurface,
+                style = MaterialTheme.typography.caption3,
+                fontWeight = FontWeight.Bold,
+            )
+            if (logItems.isEmpty()) {
+                Text(
+                    text = "No messages yet",
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.72f),
+                    style = MaterialTheme.typography.caption3,
+                )
+            } else {
+                logItems.forEach { item ->
+                    Text(
+                        text = item,
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.82f),
+                        style = MaterialTheme.typography.caption3,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+// TimeText가 차지하는 상단과 원형 화면 하단을 피해 배치하고, 작은 기기에서는 세로 스크롤로 잘림을 방지합니다.
 @Composable
 private fun ScreenContainer(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = ScreenHorizontalPadding),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = ScreenHorizontalPadding, vertical = ScreenVerticalPadding),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         content = content,
@@ -259,12 +300,12 @@ private fun StatusOrb(
                 .size(OrbSize)
                 .clip(CircleShape)
                 .background(Color(0xFF1A1C1D))
-                .padding(18.dp),
+                .padding(16.dp),
             contentAlignment = Alignment.Center,
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = iconTint)
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
             text = title,
             color = MaterialTheme.colors.onSurface,
@@ -274,16 +315,38 @@ private fun StatusOrb(
         )
         Spacer(Modifier.height(2.dp))
         Text(
+            modifier = Modifier.fillMaxWidth(0.82f),
             text = subtitle,
             color = MaterialTheme.colors.onSurface.copy(alpha = 0.82f),
             style = MaterialTheme.typography.caption3,
             textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
-        Spacer(Modifier.height(6.dp))
-        Chip(
-            onClick = { },
-            label = { Text(badge, color = badgeColor) },
-            colors = ChipDefaults.secondaryChipColors(),
+        Spacer(Modifier.height(5.dp))
+        StatusBadge(text = badge, color = badgeColor)
+    }
+}
+
+// 작은 원형 화면에서 badge용 Chip은 높이를 많이 쓰므로, 읽기 전용 상태는 얇은 pill로 표시합니다.
+@Composable
+private fun StatusBadge(
+    text: String,
+    color: Color,
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF1A1C1D))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = color,
+            style = MaterialTheme.typography.caption3,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -345,12 +408,13 @@ private fun SmallActionChip(
 @Composable
 private fun IconAction(
     icon: ImageVector,
+    contentDescription: String,
     onClick: () -> Unit,
 ) {
     Button(
         onClick = onClick,
         modifier = Modifier.size(QuickActionSize),
     ) {
-        Icon(imageVector = icon, contentDescription = null)
+        Icon(imageVector = icon, contentDescription = contentDescription)
     }
 }

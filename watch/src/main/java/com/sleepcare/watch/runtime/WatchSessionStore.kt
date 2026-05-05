@@ -4,6 +4,8 @@ import com.sleepcare.watch.contracts.WatchFlushPolicy
 import com.sleepcare.watch.contracts.WatchHeartRateSample
 import com.sleepcare.watch.model.WatchScreen
 import com.sleepcare.watch.model.WatchUiState
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.update
 object WatchSessionStore {
     private val _state = MutableStateFlow(WatchUiState())
     val state: StateFlow<WatchUiState> = _state.asStateFlow()
+    private val logTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
 
     fun showConnectionWaiting(
         subtitle: String = "Open app on phone to start session",
@@ -25,7 +28,7 @@ object WatchSessionStore {
                 sessionId = sessionId,
                 connectionTitle = "Ready to Sync",
                 connectionSubtitle = subtitle,
-                connectionBadge = "Waiting...",
+                connectionBadge = it.lastIncomingPath?.let { path -> "Last ${path.shortPath()}" } ?: "Waiting...",
                 trackingStatus = "Foreground tracking idle",
                 lastSyncLabel = "Waiting for phone",
             )
@@ -135,4 +138,63 @@ object WatchSessionStore {
             )
         }
     }
+
+    fun recordIncomingMessage(
+        path: String,
+        sessionId: String?,
+        parsed: Boolean,
+    ) {
+        appendDebugLog(
+            message = "RX ${path.shortPath()} sid=${sessionId ?: "none"} parsed=${if (parsed) "ok" else "fail"}",
+            lastIncomingPath = path,
+        )
+    }
+
+    fun recordCommandHandled(
+        label: String,
+        sessionId: String? = null,
+    ) {
+        appendDebugLog("OK $label${sessionId?.let { " sid=$it" } ?: ""}")
+    }
+
+    fun recordCommandError(
+        label: String,
+        sessionId: String? = null,
+        detail: String? = null,
+    ) {
+        val suffix = buildString {
+            sessionId?.let { append(" sid=$it") }
+            detail?.let { append(" · ${it.take(48)}") }
+        }
+        appendDebugLog("ERR $label$suffix")
+    }
+
+    private fun appendDebugLog(
+        message: String,
+        lastIncomingPath: String? = null,
+    ) {
+        val line = "${LocalTime.now().format(logTimeFormatter)} $message"
+        _state.update { current ->
+            val nextLog = (listOf(line) + current.messageLog).take(MaxMessageLogItems)
+            val nextIncomingPath = lastIncomingPath ?: current.lastIncomingPath
+            current.copy(
+                lastIncomingPath = nextIncomingPath,
+                messageLog = nextLog,
+                connectionSubtitle = if (current.screen == WatchScreen.ConnectionWaiting && nextIncomingPath != null) {
+                    "Last message: ${nextIncomingPath.shortPath()}"
+                } else {
+                    current.connectionSubtitle
+                },
+                connectionBadge = if (current.screen == WatchScreen.ConnectionWaiting && nextIncomingPath != null) {
+                    "RX ${nextIncomingPath.shortPath()}"
+                } else {
+                    current.connectionBadge
+                },
+            )
+        }
+    }
+
+    private fun String.shortPath(): String = substringAfterLast('/').ifBlank { this }
+
+    private const val MaxMessageLogItems = 5
 }

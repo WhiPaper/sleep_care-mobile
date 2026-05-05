@@ -1,6 +1,7 @@
 package com.sleepcare.mobile.data.source
 
 import android.content.Context
+import android.util.Log
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
@@ -9,6 +10,7 @@ import com.google.android.gms.wearable.Wearable
 import com.sleepcare.mobile.domain.ConnectionStatus
 import com.sleepcare.mobile.domain.ConnectedDeviceState
 import com.sleepcare.mobile.domain.DeviceType
+import com.sleepcare.mobile.domain.WatchCommandTargetPolicy
 import com.sleepcare.mobile.domain.WatchCursor
 import com.sleepcare.mobile.domain.WatchFlushPolicy
 import com.sleepcare.mobile.domain.WatchHeartRateBatch
@@ -74,11 +76,7 @@ class GalaxyWatchSessionDataSource @Inject constructor(
         ensureListenerRegistered()
         // 기기 연결 화면은 페어링된 Wear OS 노드를 기준으로 보여 주고,
         // 실제 세션 명령은 별도로 SleepCare 워치 앱 capability가 있는 노드에만 보냅니다.
-        val node = runCatching {
-            Wearable.getNodeClient(context).connectedNodes.await()
-                .sortedWith(compareByDescending<Node> { it.isNearby }.thenBy { it.displayName })
-                .firstOrNull()
-        }.getOrNull()
+        val node = runCatching { findConnectedNode() }.getOrNull()
         currentSessionRuntimeNode = runCatching { findSessionRuntimeNode() }.getOrNull()
         currentNode = node
         connectionState.value = if (node == null) {
@@ -105,23 +103,39 @@ class GalaxyWatchSessionDataSource @Inject constructor(
         return node != null
     }
 
-    override suspend fun startSession(config: WatchSessionConfig): Boolean =
-        sendMessage(WatchPaths.Start, WatchProtocolCodec.buildStartPayload(config))
+    override suspend fun startSession(
+        config: WatchSessionConfig,
+        targetPolicy: WatchCommandTargetPolicy,
+    ): Boolean = sendMessage(WatchPaths.Start, WatchProtocolCodec.buildStartPayload(config), targetPolicy)
 
-    override suspend fun stopSession(sessionId: String): Boolean =
-        sendMessage(WatchPaths.Stop, WatchProtocolCodec.buildStopPayload(sessionId))
+    override suspend fun stopSession(
+        sessionId: String,
+        targetPolicy: WatchCommandTargetPolicy,
+    ): Boolean = sendMessage(WatchPaths.Stop, WatchProtocolCodec.buildStopPayload(sessionId), targetPolicy)
 
-    override suspend fun acknowledgeCursor(cursor: WatchCursor): Boolean =
-        sendMessage(WatchPaths.Ack, WatchProtocolCodec.buildAckPayload(cursor))
+    override suspend fun acknowledgeCursor(
+        cursor: WatchCursor,
+        targetPolicy: WatchCommandTargetPolicy,
+    ): Boolean = sendMessage(WatchPaths.Ack, WatchProtocolCodec.buildAckPayload(cursor), targetPolicy)
 
-    override suspend fun requestBackfill(sessionId: String, fromSampleSeq: Long): Boolean =
-        sendMessage(WatchPaths.Backfill, WatchProtocolCodec.buildBackfillPayload(sessionId, fromSampleSeq))
+    override suspend fun requestBackfill(
+        sessionId: String,
+        fromSampleSeq: Long,
+        targetPolicy: WatchCommandTargetPolicy,
+    ): Boolean = sendMessage(WatchPaths.Backfill, WatchProtocolCodec.buildBackfillPayload(sessionId, fromSampleSeq), targetPolicy)
 
-    override suspend fun updateFlushPolicy(sessionId: String, flushPolicy: WatchFlushPolicy): Boolean =
-        sendMessage(WatchPaths.FlushPolicy, WatchProtocolCodec.buildFlushPolicyPayload(sessionId, flushPolicy))
+    override suspend fun updateFlushPolicy(
+        sessionId: String,
+        flushPolicy: WatchFlushPolicy,
+        targetPolicy: WatchCommandTargetPolicy,
+    ): Boolean = sendMessage(WatchPaths.FlushPolicy, WatchProtocolCodec.buildFlushPolicyPayload(sessionId, flushPolicy), targetPolicy)
 
-    override suspend fun sendVibrationAlert(sessionId: String, level: Int, pattern: String): Boolean =
-        sendMessage(WatchPaths.Vibrate, WatchProtocolCodec.buildVibrationPayload(sessionId, level, pattern))
+    override suspend fun sendVibrationAlert(
+        sessionId: String,
+        level: Int,
+        pattern: String,
+        targetPolicy: WatchCommandTargetPolicy,
+    ): Boolean = sendMessage(WatchPaths.Vibrate, WatchProtocolCodec.buildVibrationPayload(sessionId, level, pattern), targetPolicy)
 
     override suspend fun disconnect() {
         currentNode = null
@@ -160,28 +174,54 @@ class GalaxyWatchSessionDataSource @Inject constructor(
         }
     }
 
-    private suspend fun sendMessage(path: String, payload: ByteArray): Boolean {
+    private suspend fun sendMessage(
+        path: String,
+        payload: ByteArray,
+        targetPolicy: WatchCommandTargetPolicy,
+    ): Boolean {
         ensureListenerRegistered()
-        // 세션 제어 메시지는 SleepCare 워치 앱 capability가 확인된 노드에만 보냅니다.
-        val node = currentSessionRuntimeNode ?: findSessionRuntimeNode()
+        // 운영 세션은 SleepCare 워치 앱 capability가 확인된 노드에만 보냅니다.
+        // 개발자 테스트는 capability 발견 문제와 실제 메시지 수신 문제를 분리하기 위해 페어링 노드 fallback을 허용합니다.
+        val capabilityNode = currentSessionRuntimeNode ?: runCatching { findSessionRuntimeNode() }.getOrNull()
+        val fallbackNode = if (capabilityNode == null && targetPolicy == WatchCommandTargetPolicy.DebugAllowPairedFallback) {
+            currentNode ?: runCatching { findConnectedNode() }.getOrNull()
+        } else {
+            null
+        }
+        val node = capabilityNode ?: fallbackNode
         if (node == null) {
             refreshConnection()
             connectionState.value = connectionState.value.copy(
-                details = "Wear OS 워치는 연결되어 있지만 SleepCare 워치 앱을 찾지 못했습니다.",
+                details = if (targetPolicy == WatchCommandTargetPolicy.DebugAllowPairedFallback) {
+                    "Wear OS 워치 연결과 SleepCare 워치 앱 capability를 모두 찾지 못했습니다."
+                } else {
+                    "Wear OS 워치는 연결되어 있지만 SleepCare 워치 앱을 찾지 못했습니다."
+                },
             )
             return false
         }
-        currentSessionRuntimeNode = node
+        if (capabilityNode != null) {
+            currentSessionRuntimeNode = node
+        }
         return runCatching {
+            Log.d(
+                TAG,
+                "send watch message path=$path, target=${node.displayName.ifBlank { node.id }}, nodeId=${node.id}, policy=$targetPolicy",
+            )
             Wearable.getMessageClient(context).sendMessage(node.id, path, payload).await()
             connectionState.value = connectionState.value.copy(
                 status = ConnectionStatus.Connected,
                 deviceName = node.displayName.ifBlank { "Galaxy Watch" },
-                details = "Wear OS Data Layer 연결됨",
+                details = if (fallbackNode != null) {
+                    "SleepCare capability 미탐지 · 개발자 fallback으로 Wear OS 노드에 전송됨"
+                } else {
+                    "Wear OS Data Layer 연결됨 · SleepCare 워치 앱 capability 확인됨"
+                },
                 lastSeenAt = LocalDateTime.now(),
             )
             true
         }.getOrElse { throwable ->
+            Log.d(TAG, "send watch message failed path=$path, target=${node.displayName.ifBlank { node.id }}", throwable)
             connectionState.value = connectionState.value.copy(
                 status = ConnectionStatus.Failed,
                 details = throwable.message ?: "Galaxy Watch 메시지 전송에 실패했습니다.",
@@ -197,4 +237,13 @@ class GalaxyWatchSessionDataSource @Inject constructor(
             .nodes
             .sortedWith(compareByDescending<Node> { it.isNearby }.thenBy { it.displayName })
             .firstOrNull()
+
+    private suspend fun findConnectedNode(): Node? =
+        Wearable.getNodeClient(context).connectedNodes.await()
+            .sortedWith(compareByDescending<Node> { it.isNearby }.thenBy { it.displayName })
+            .firstOrNull()
+
+    private companion object {
+        private const val TAG = "SleepCareWatch"
+    }
 }

@@ -238,6 +238,26 @@ typealias WatchSessionReady = SharedWatchSessionReady
 typealias WatchSessionError = SharedWatchSessionError
 typealias WatchSessionClosed = SharedWatchSessionClosed
 
+// 워치 명령을 보낼 때 어떤 노드를 신뢰할지 정하는 정책입니다.
+// 운영 공부 세션은 capability가 확인된 SleepCare 워치 앱만 대상으로 삼고,
+// 개발자 테스트는 capability 발견 문제를 분리 진단하기 위해 페어링된 Wear OS 노드 fallback을 허용합니다.
+enum class WatchCommandTargetPolicy {
+    CapabilityOnly,
+    DebugAllowPairedFallback,
+}
+
+// 개발자 모드의 워치 단독 통신 테스트 상태입니다.
+// 운영 공부 세션 상태와 분리해 Pi 연결 없이 Wear OS Data Layer만 점검할 수 있게 합니다.
+data class WatchDebugState(
+    val sessionId: String? = null,
+    val commandInFlight: Boolean = false,
+    val lastCommandStatus: String = "워치 통신 테스트 대기 중",
+    val watchConnectionDetails: String? = null,
+    val lastSessionEvent: String? = null,
+    val latestHeartRateSummary: String? = null,
+    val latestSampleSeq: Long? = null,
+)
+
 // 현재 공부 세션의 모든 실시간 상태를 홈 화면과 저장소가 함께 관찰합니다.
 data class StudySessionState(
     val sessionId: String? = null,

@@ -19,10 +19,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,6 +80,7 @@ fun PiPairingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var manualPayload by rememberSaveable { mutableStateOf("") }
     var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
@@ -93,6 +98,7 @@ fun PiPairingScreen(
     Column(
         modifier = Modifier
             .padding(paddingValues)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -105,6 +111,32 @@ fun PiPairingScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+
+        GlassCard {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("JSON 직접 입력", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "카메라가 QR을 읽지 못하면 Pi 화면이나 로그의 pairing JSON을 그대로 붙여 넣어 같은 등록 검증을 진행합니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = manualPayload,
+                    onValueChange = { manualPayload = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 5,
+                    label = { Text("sleepcare-pair-v1 JSON") },
+                    placeholder = { Text("{\"proto\":\"sleepcare-pair-v1\", ...}") },
+                )
+                Button(
+                    onClick = { viewModel.onManualPayloadSubmitted(manualPayload) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = manualPayload.isNotBlank(),
+                ) {
+                    Text("JSON 확인")
+                }
             }
         }
 
@@ -124,36 +156,49 @@ fun PiPairingScreen(
         uiState.errorMessage?.let { message ->
             GlassCard {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("QR을 확인할 수 없습니다", style = MaterialTheme.typography.titleMedium)
+                    Text("Pi 등록 정보를 확인할 수 없습니다", style = MaterialTheme.typography.titleMedium)
                     Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedButton(onClick = viewModel::clearScan, modifier = Modifier.fillMaxWidth()) {
-                        Text("다시 스캔")
+                        Text("다시 확인")
                     }
                 }
             }
         }
 
         uiState.parsedPayload?.let { payload ->
-            GlassCard {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(payload.displayName ?: payload.deviceId, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "device_id: ${payload.deviceId}\nservice: ${payload.service}\nws: ${payload.ws}\nSPKI: ${PiPairingCodec.shortPin(payload.spkiSha256)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Button(onClick = viewModel::registerScannedPi, modifier = Modifier.fillMaxWidth()) {
-                        Text("이 Pi 등록")
-                    }
-                    OutlinedButton(onClick = viewModel::clearScan, modifier = Modifier.fillMaxWidth()) {
-                        Text("다시 스캔")
-                    }
-                }
-            }
+            PairingPreviewCard(
+                payload = payload,
+                onRegister = viewModel::registerParsedPi,
+                onClear = viewModel::clearScan,
+            )
         }
 
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text("뒤로")
+        }
+    }
+}
+
+@Composable
+private fun PairingPreviewCard(
+    payload: PiPairingPayload,
+    onRegister: () -> Unit,
+    onClear: () -> Unit,
+) {
+    GlassCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(payload.displayName ?: payload.deviceId, style = MaterialTheme.typography.titleMedium)
+            Text(
+                "device_id: ${payload.deviceId}\nservice: ${payload.service}\nws: ${payload.ws}\nSPKI: ${PiPairingCodec.shortPin(payload.spkiSha256)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onRegister, modifier = Modifier.fillMaxWidth()) {
+                Text("이 Pi 등록")
+            }
+            OutlinedButton(onClick = onClear, modifier = Modifier.fillMaxWidth()) {
+                Text("다시 확인")
+            }
         }
     }
 }
@@ -167,6 +212,15 @@ class PiPairingViewModel @Inject constructor(
 
     fun onQrScanned(rawPayload: String) {
         if (_uiState.value.rawPayload == rawPayload && _uiState.value.parsedPayload != null) return
+        parsePairingPayload(rawPayload)
+    }
+
+    fun onManualPayloadSubmitted(rawPayload: String) {
+        parsePairingPayload(rawPayload.trim())
+    }
+
+    private fun parsePairingPayload(rawPayload: String) {
+        // QR 스캔과 JSON 직접 입력은 같은 codec을 통과시켜 신뢰 등록 조건이 엇갈리지 않게 합니다.
         val parsed = runCatching { PiPairingCodec.parse(rawPayload) }
         _uiState.value = parsed.fold(
             onSuccess = { PiPairingUiState(rawPayload = rawPayload, parsedPayload = it) },
@@ -178,7 +232,7 @@ class PiPairingViewModel @Inject constructor(
         _uiState.value = PiPairingUiState()
     }
 
-    fun registerScannedPi() {
+    fun registerParsedPi() {
         val rawPayload = _uiState.value.rawPayload ?: return
         viewModelScope.launch {
             val result = deviceConnectionRepository.registerPiFromQr(rawPayload)

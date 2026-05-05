@@ -32,4 +32,6 @@ data class WatchUiState(
     val alertActionLabel: String = "Dismiss",
     val flushPolicy: WatchFlushPolicy = WatchFlushPolicy(),
     val latestSample: WatchHeartRateSample? = null,
+    val lastIncomingPath: String? = null,
+    val messageLog: List<String> = emptyList(),
 )

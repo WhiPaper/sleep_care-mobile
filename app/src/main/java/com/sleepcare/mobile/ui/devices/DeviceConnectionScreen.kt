@@ -24,7 +24,10 @@ import com.sleepcare.mobile.domain.ConnectionStatus
 import com.sleepcare.mobile.domain.ConnectedDeviceState
 import com.sleepcare.mobile.domain.DeviceConnectionRepository
 import com.sleepcare.mobile.domain.DeviceType
+import com.sleepcare.mobile.domain.SettingsRepository
 import com.sleepcare.mobile.domain.TrustedPiDevice
+import com.sleepcare.mobile.domain.WatchDebugRepository
+import com.sleepcare.mobile.domain.WatchDebugState
 import com.sleepcare.mobile.ui.components.DeviceStatusCard
 import com.sleepcare.mobile.ui.components.DeviceVisualStatus
 import com.sleepcare.mobile.ui.components.GlassCard
@@ -40,6 +43,8 @@ import kotlinx.coroutines.launch
 data class DevicesUiState(
     val devices: List<ConnectedDeviceState> = emptyList(),
     val trustedPi: TrustedPiDevice? = null,
+    val developerModeEnabled: Boolean = false,
+    val watchDebugState: WatchDebugState = WatchDebugState(),
 )
 
 // Galaxy Watch와 Raspberry Pi 연결 상태를 카드로 보여주고 재시도/연결 해제를 제공합니다.
@@ -125,6 +130,20 @@ fun DeviceConnectionScreen(
                 },
             )
         }
+        if (uiState.developerModeEnabled) {
+            item {
+                WatchDebugCard(
+                    state = uiState.watchDebugState,
+                    onRefresh = viewModel::refreshWatchDebugConnection,
+                    onStart = viewModel::startWatchDebugSession,
+                    onFlush = viewModel::sendWatchDebugFlushPolicy,
+                    onVibrate = viewModel::sendWatchDebugVibration,
+                    onAck = viewModel::sendWatchDebugAck,
+                    onBackfill = viewModel::requestWatchDebugBackfill,
+                    onStop = viewModel::stopWatchDebugSession,
+                )
+            }
+        }
         item {
             GlassCard {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -143,16 +162,77 @@ fun DeviceConnectionScreen(
     }
 }
 
+@Composable
+private fun WatchDebugCard(
+    state: WatchDebugState,
+    onRefresh: () -> Unit,
+    onStart: () -> Unit,
+    onFlush: () -> Unit,
+    onVibrate: () -> Unit,
+    onAck: () -> Unit,
+    onBackfill: () -> Unit,
+    onStop: () -> Unit,
+) {
+    GlassCard {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("개발자 모드 · 워치 통신 테스트", style = MaterialTheme.typography.titleMedium)
+            Text(
+                buildString {
+                    append("Pi 공부 세션 없이 Wear OS Data Layer만 점검합니다.")
+                    append("\n전송 성공은 워치 앱 수신 확인이 아니므로, 워치 설정의 Message Log도 함께 확인합니다.")
+                    append("\n세션: ${state.sessionId ?: "아직 없음"}")
+                    append("\n마지막 명령: ${state.lastCommandStatus}")
+                    state.watchConnectionDetails?.let { append("\n워치 연결: $it") }
+                    state.lastSessionEvent?.let { append("\n워치 이벤트: $it") }
+                    state.latestHeartRateSummary?.let { append("\n심박 배치: $it") }
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onRefresh, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("워치 연결 새로고침")
+            }
+            Button(onClick = onStart, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("테스트 세션 시작")
+            }
+            OutlinedButton(onClick = onFlush, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("Flush policy 전송")
+            }
+            OutlinedButton(onClick = onVibrate, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("진동 테스트")
+            }
+            OutlinedButton(onClick = onAck, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("ACK 전송")
+            }
+            OutlinedButton(onClick = onBackfill, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("Backfill 요청")
+            }
+            OutlinedButton(onClick = onStop, modifier = Modifier.fillMaxWidth(), enabled = !state.commandInFlight) {
+                Text("테스트 세션 종료")
+            }
+        }
+    }
+}
+
 @HiltViewModel
 // 기기 상태 Flow를 UI 상태로 감싸고 버튼 명령을 Repository로 전달합니다.
 class DevicesViewModel @Inject constructor(
     private val deviceConnectionRepository: DeviceConnectionRepository,
+    private val settingsRepository: SettingsRepository,
+    private val watchDebugRepository: WatchDebugRepository,
 ) : ViewModel() {
     val uiState = combine(
         deviceConnectionRepository.observeDevices(),
         deviceConnectionRepository.observeTrustedPi(),
-    ) { devices, trustedPi ->
-        DevicesUiState(devices = devices, trustedPi = trustedPi)
+        settingsRepository.observeDeveloperModeEnabled(),
+        watchDebugRepository.observeDebugState(),
+    ) { devices, trustedPi, developerModeEnabled, watchDebugState ->
+        DevicesUiState(
+            devices = devices,
+            trustedPi = trustedPi,
+            developerModeEnabled = developerModeEnabled,
+            watchDebugState = watchDebugState,
+        )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DevicesUiState())
 
@@ -170,6 +250,34 @@ class DevicesViewModel @Inject constructor(
 
     fun forgetPi() {
         viewModelScope.launch { deviceConnectionRepository.forgetPi() }
+    }
+
+    fun refreshWatchDebugConnection() {
+        viewModelScope.launch { watchDebugRepository.refreshConnection() }
+    }
+
+    fun startWatchDebugSession() {
+        viewModelScope.launch { watchDebugRepository.startTestSession() }
+    }
+
+    fun sendWatchDebugFlushPolicy() {
+        viewModelScope.launch { watchDebugRepository.sendFlushPolicy() }
+    }
+
+    fun sendWatchDebugVibration() {
+        viewModelScope.launch { watchDebugRepository.sendVibrationAlert() }
+    }
+
+    fun sendWatchDebugAck() {
+        viewModelScope.launch { watchDebugRepository.sendAck() }
+    }
+
+    fun requestWatchDebugBackfill() {
+        viewModelScope.launch { watchDebugRepository.requestBackfill() }
+    }
+
+    fun stopWatchDebugSession() {
+        viewModelScope.launch { watchDebugRepository.stopTestSession() }
     }
 }
 

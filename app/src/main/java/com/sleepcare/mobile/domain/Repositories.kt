@@ -16,12 +16,34 @@ interface WatchSessionDataSource {
     fun observeHeartRateBatches(): Flow<WatchHeartRateBatch>
     fun observeSessionEvents(): Flow<WatchSessionEvent>
     suspend fun refreshConnection(): Boolean
-    suspend fun startSession(config: WatchSessionConfig): Boolean
-    suspend fun stopSession(sessionId: String): Boolean
-    suspend fun acknowledgeCursor(cursor: WatchCursor): Boolean
-    suspend fun requestBackfill(sessionId: String, fromSampleSeq: Long): Boolean
-    suspend fun updateFlushPolicy(sessionId: String, flushPolicy: WatchFlushPolicy): Boolean
-    suspend fun sendVibrationAlert(sessionId: String, level: Int, pattern: String): Boolean
+    suspend fun startSession(
+        config: WatchSessionConfig,
+        targetPolicy: WatchCommandTargetPolicy = WatchCommandTargetPolicy.CapabilityOnly,
+    ): Boolean
+    suspend fun stopSession(
+        sessionId: String,
+        targetPolicy: WatchCommandTargetPolicy = WatchCommandTargetPolicy.CapabilityOnly,
+    ): Boolean
+    suspend fun acknowledgeCursor(
+        cursor: WatchCursor,
+        targetPolicy: WatchCommandTargetPolicy = WatchCommandTargetPolicy.CapabilityOnly,
+    ): Boolean
+    suspend fun requestBackfill(
+        sessionId: String,
+        fromSampleSeq: Long,
+        targetPolicy: WatchCommandTargetPolicy = WatchCommandTargetPolicy.CapabilityOnly,
+    ): Boolean
+    suspend fun updateFlushPolicy(
+        sessionId: String,
+        flushPolicy: WatchFlushPolicy,
+        targetPolicy: WatchCommandTargetPolicy = WatchCommandTargetPolicy.CapabilityOnly,
+    ): Boolean
+    suspend fun sendVibrationAlert(
+        sessionId: String,
+        level: Int,
+        pattern: String,
+        targetPolicy: WatchCommandTargetPolicy = WatchCommandTargetPolicy.CapabilityOnly,
+    ): Boolean
     suspend fun disconnect()
 }
 
@@ -89,6 +111,19 @@ interface DeviceConnectionRepository {
     suspend fun forgetPi()
 }
 
+// 개발자 모드에서 Pi 없이 폰-워치 Data Layer 계약만 검증하기 위한 포트입니다.
+// 운영 공부 세션 저장/연결 흐름을 건드리지 않도록 별도 Repository로 둡니다.
+interface WatchDebugRepository {
+    fun observeDebugState(): Flow<WatchDebugState>
+    suspend fun refreshConnection()
+    suspend fun startTestSession()
+    suspend fun sendFlushPolicy()
+    suspend fun sendVibrationAlert()
+    suspend fun sendAck()
+    suspend fun requestBackfill()
+    suspend fun stopTestSession()
+}
+
 interface StudySessionRepository {
     fun observeSessionState(): Flow<StudySessionState>
     suspend fun startSession(mode: StudySessionMode = StudySessionMode.WatchAndEye)
@@ -100,6 +135,8 @@ interface SettingsRepository {
     suspend fun setOnboardingCompleted(completed: Boolean)
     fun observeNotificationPreferences(): Flow<NotificationPreferences>
     suspend fun updateNotificationPreferences(preferences: NotificationPreferences)
+    fun observeDeveloperModeEnabled(): Flow<Boolean>
+    suspend fun setDeveloperModeEnabled(enabled: Boolean)
     fun observeUserGoals(): Flow<UserGoals>
     suspend fun updateUserGoals(goals: UserGoals)
     fun observeLastSyncState(): Flow<LastSyncState>

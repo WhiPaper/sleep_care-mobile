@@ -11,7 +11,9 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.sleepcare.watch"
+        // Wear OS Data Layer는 휴대폰/워치 앱을 같은 applicationId와 같은 서명으로 묶어 같은 앱으로 판단합니다.
+        // Kotlin namespace는 워치 코드 패키지와 R 경로를 유지하기 위해 `com.sleepcare.watch`로 그대로 둡니다.
+        applicationId = "com.sleepcare.mobile"
         minSdk = 30
         targetSdk = 35
         versionCode = 1
