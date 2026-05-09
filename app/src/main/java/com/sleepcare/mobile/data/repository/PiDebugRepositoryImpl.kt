@@ -51,7 +51,9 @@ object PiDebugPayloadFactory {
         spkiSha256: String,
         issuedAtMs: Long = System.currentTimeMillis(),
     ): String {
-        PiPairingCodec.validateSpkiPin(spkiSha256)
+        if (!endpoint.bypassVerification) {
+            PiPairingCodec.validateSpkiPin(spkiSha256)
+        }
         val normalized = endpoint.normalized()
         return JSONObject()
             .put("proto", PiPairingCodec.PROTO)
@@ -61,8 +63,9 @@ object PiDebugPayloadFactory {
             .put("ws", normalized.wsPath)
             .put("tls", 1)
             .put("spki_sha256", spkiSha256)
+            .put("bypass_verification", endpoint.bypassVerification)
             .put("issued_at_ms", issuedAtMs)
-            .put("pin_hint", PiPairingCodec.shortPin(spkiSha256))
+            .put("pin_hint", if (endpoint.bypassVerification) "bypass" else PiPairingCodec.shortPin(spkiSha256))
             .toString(2)
     }
 
@@ -160,9 +163,12 @@ class PiDebugRepositoryImpl @Inject constructor(
 
     override suspend fun generatePairingJson() {
         runPiCommand("pairing JSON 생성") {
+            val endpoint = debugState.value.endpoint
             val spki = debugState.value.serverSpkiSha256
-                ?: throw IllegalStateException("먼저 SPKI 읽기를 실행해 주세요.")
-            val json = PiDebugPayloadFactory.buildPairingJson(debugState.value.endpoint, spki)
+            if (!endpoint.bypassVerification && spki == null) {
+                throw IllegalStateException("먼저 SPKI 읽기를 실행하거나 '인증서 검증 우회'를 켜주세요.")
+            }
+            val json = PiDebugPayloadFactory.buildPairingJson(endpoint, spki ?: "")
             // 생성 직후 기존 QR 파서로 검증해, 앱이 저장할 수 없는 JSON을 화면에 보여주지 않습니다.
             PiPairingCodec.parse(json)
             debugState.update { current -> current.copy(generatedPairingJson = json) }
@@ -253,9 +259,12 @@ class PiDebugRepositoryImpl @Inject constructor(
 
     private suspend fun connectForSelectedMode() = when (debugState.value.connectionMode) {
         PiDebugConnectionMode.DirectEndpoint -> {
+            val endpoint = debugState.value.endpoint
             val spki = debugState.value.serverSpkiSha256
-                ?: throw IllegalStateException("직접 endpoint 모드는 먼저 SPKI 읽기가 필요합니다.")
-            piDebugClient.connectDirect(debugState.value.endpoint, spki)
+            if (!endpoint.bypassVerification && spki == null) {
+                throw IllegalStateException("직접 endpoint 모드는 먼저 SPKI 읽기가 필요하거나 '인증서 검증 우회'를 켜야 합니다.")
+            }
+            piDebugClient.connectDirect(endpoint, spki ?: "")
         }
 
         PiDebugConnectionMode.RegisteredPiNsd -> {

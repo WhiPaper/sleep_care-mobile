@@ -19,9 +19,6 @@ import com.sleepcare.mobile.domain.TrustedPiDevice
 import com.sleepcare.mobile.domain.WatchHeartRateSample
 import com.sleepcare.mobile.domain.WatchSleepDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.security.SecureRandom
-import java.security.cert.CertificateException
-import java.security.cert.X509Certificate
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -30,8 +27,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -346,17 +341,21 @@ class PiNetworkDataSourceImpl @Inject constructor(
         endpoint: PiServiceEndpoint,
         trustedPi: TrustedPiDevice,
     ): Boolean = withContext(Dispatchers.IO) {
-        // QR 페어링 때 저장한 SPKI hash와 서버 인증서를 비교해 등록된 Pi인지 확인합니다.
-        val trustManager = SpkiPinningTrustManager(trustedPi.spkiSha256)
-        val sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, arrayOf(trustManager), SecureRandom())
+        // Network Security Configuration(res/xml/network_security_config.xml)이
+        // 인증서와 호스트 이름(sleepcare-pi.local)을 검증하므로 사용자 정의 TrustManager를 제거합니다.
+        // DNS를 우회하여 로컬에서 찾은 IP로 직접 연결합니다.
         val okHttpClient = OkHttpClient.Builder()
             .pingInterval(20, TimeUnit.SECONDS)
-            .sslSocketFactory(sslContext.socketFactory, trustManager)
-            .hostnameVerifier { _, _ -> true }
+            .dns { hostname ->
+                if (hostname == "sleepcare-pi.local") {
+                    listOf(java.net.InetAddress.getByName(endpoint.host))
+                } else {
+                    okhttp3.Dns.SYSTEM.lookup(hostname)
+                }
+            }
             .build()
         val request = Request.Builder()
-            .url("wss://${endpoint.host}:${endpoint.port}${endpoint.wsPath}")
+            .url("wss://sleepcare-pi.local:${endpoint.port}${endpoint.wsPath}")
             .build()
 
         connectionState.value = ConnectedDeviceState(
@@ -475,6 +474,19 @@ class PiNetworkDataSourceImpl @Inject constructor(
                 }
             }
 
+            "ping" -> {
+                sendEnvelope(
+                    PiProtocolCodec.buildEnvelope(
+                        type = "pong",
+                        sequence = sequence.getAndIncrement(),
+                        source = "phone",
+                        sessionId = envelope.sessionId,
+                        ackRequired = false,
+                        body = JSONObject(),
+                    )
+                )
+            }
+
             "pong", "ack" -> Unit
         }
     }
@@ -507,7 +519,8 @@ class PiNetworkDataSourceImpl @Inject constructor(
                         override fun onDiscoveryStarted(serviceType: String) = Unit
 
                         override fun onServiceFound(serviceInfo: NsdServiceInfo) {
-                            if (resolved || serviceInfo.serviceType != trustedPi.serviceType) return
+                            // Android NSD는 서비스 타입 앞뒤에 점이 붙어 있을 수 있어 contains로 확인하는 것이 안전합니다.
+                            if (resolved || !serviceInfo.serviceType.contains(trustedPi.serviceType)) return
                             nsdManager.resolveService(serviceInfo, object : NsdManager.ResolveListener {
                                 override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) = Unit
 
@@ -548,9 +561,13 @@ class PiNetworkDataSourceImpl @Inject constructor(
     private fun NsdServiceInfo.toEndpoint(trustedPi: TrustedPiDevice): PiServiceEndpoint? {
         val attributes = attributes.mapValues { (_, value) -> value.decodeToString() }
         // SleepCare v1 + TLS를 광고하는 서비스만 실제 Pi로 인정합니다.
+        // TXT 레코드가 아직 안 왔거나 프로토콜이 다르면 무시합니다.
         if (attributes["proto"] != "v1" || attributes["tls"] != "1") return null
-        val deviceId = attributes["device_id"] ?: serviceName ?: return null
-        if (deviceId != trustedPi.deviceId) return null
+        
+        // device_id가 TXT 레코드에 없으면 서비스 이름을 차선책으로 사용합니다.
+        val discoveredId = attributes["device_id"] ?: serviceName ?: return null
+        if (discoveredId != trustedPi.deviceId && !serviceName.contains(trustedPi.deviceId)) return null
+
         val path = attributes["ws"] ?: trustedPi.wsPath
         if (path != trustedPi.wsPath) return null
         val hostAddress = host?.hostAddress ?: return null
@@ -559,9 +576,11 @@ class PiNetworkDataSourceImpl @Inject constructor(
             host = hostAddress,
             port = port,
             wsPath = path,
-            deviceId = deviceId,
+            deviceId = discoveredId,
         )
     }
+
+
 }
 
 // JSONObject는 null과 누락을 같은 방식으로 다루지 않으므로, 선택 필드를 명시적으로 nullable로 읽습니다.
@@ -570,20 +589,3 @@ private fun JSONObject.optDoubleOrNull(key: String): Double? =
 
 private fun JSONObject.optIntOrNull(key: String): Int? =
     takeIf { has(key) && !isNull(key) }?.optInt(key)
-
-// 등록된 Pi의 공개키 핀만 신뢰해 개발 인증서 파일을 앱에 고정하지 않아도 되게 합니다.
-private class SpkiPinningTrustManager(
-    private val expectedSpkiSha256: String,
-) : X509TrustManager {
-    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-
-    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        val leaf = chain?.firstOrNull() ?: throw CertificateException("Server certificate is missing.")
-        val actual = PiPairingCodec.certificateSpkiSha256(leaf)
-        if (actual != expectedSpkiSha256) {
-            throw CertificateException("등록된 Pi 인증 정보와 다릅니다. QR로 다시 등록해 주세요.")
-        }
-    }
-
-    override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-}

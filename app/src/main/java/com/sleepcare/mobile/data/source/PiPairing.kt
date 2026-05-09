@@ -31,7 +31,10 @@ object PiPairingCodec {
         if (tls != 1) throw PiPairingException("Pairing requires tls=1.")
 
         val spkiSha256 = root.requiredString("spki_sha256")
-        validateSpkiPin(spkiSha256)
+        val bypassVerification = root.optBoolean("bypass_verification", false)
+        if (!bypassVerification) {
+            validateSpkiPin(spkiSha256)
+        }
 
         return PiPairingPayload(
             proto = proto,
@@ -44,6 +47,7 @@ object PiPairingCodec {
             issuedAtMs = root.optionalLong("issued_at_ms"),
             keyId = root.optionalString("key_id"),
             pinHint = root.optionalString("pin_hint"),
+            bypassVerification = bypassVerification,
         )
     }
 
@@ -55,6 +59,7 @@ object PiPairingCodec {
             wsPath = payload.ws,
             spkiSha256 = payload.spkiSha256,
             registeredAtMs = registeredAtMs,
+            bypassVerification = payload.bypassVerification,
         )
 
     fun parseTrustedDevice(raw: String): TrustedPiDevice? = runCatching {
@@ -66,6 +71,7 @@ object PiPairingCodec {
             wsPath = root.requiredString("ws_path"),
             spkiSha256 = root.requiredString("spki_sha256"),
             registeredAtMs = root.optLong("registered_at_ms", 0L),
+            bypassVerification = root.optBoolean("bypass_verification", false),
         )
     }.getOrNull()
 
@@ -76,6 +82,7 @@ object PiPairingCodec {
         .put("ws_path", wsPath)
         .put("spki_sha256", spkiSha256)
         .put("registered_at_ms", registeredAtMs)
+        .put("bypass_verification", bypassVerification)
         .toString()
 
     fun certificateSpkiSha256(certificate: X509Certificate): String =

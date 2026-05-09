@@ -3,19 +3,28 @@ package com.sleepcare.mobile.ui.devices
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -243,6 +252,25 @@ private fun PiDebugCard(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .toggleable(
+                        value = state.endpoint.bypassVerification,
+                        onValueChange = { onEndpointChanged(state.endpoint.copy(bypassVerification = it)) },
+                        role = Role.Checkbox
+                    )
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Switch(
+                    checked = state.endpoint.bypassVerification,
+                    onCheckedChange = null // toggleable handles it
+                )
+                Spacer(Modifier.width(12.dp))
+                Text("인증서 검증 우회 (Self-signed 허용)", style = MaterialTheme.typography.bodyMedium)
+            }
             OutlinedButton(
                 onClick = { onConnectionModeChanged(PiDebugConnectionMode.DirectEndpoint) },
                 modifier = Modifier.fillMaxWidth(),
