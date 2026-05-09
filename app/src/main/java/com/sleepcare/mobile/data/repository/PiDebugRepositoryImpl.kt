@@ -160,9 +160,12 @@ class PiDebugRepositoryImpl @Inject constructor(
 
     override suspend fun generatePairingJson() {
         runPiCommand("pairing JSON 생성") {
+            val endpoint = debugState.value.endpoint
             val spki = debugState.value.serverSpkiSha256
-                ?: throw IllegalStateException("먼저 SPKI 읽기를 실행해 주세요.")
-            val json = PiDebugPayloadFactory.buildPairingJson(debugState.value.endpoint, spki)
+            if (spki == null) {
+                throw IllegalStateException("먼저 SPKI 읽기를 실행해 주세요.")
+            }
+            val json = PiDebugPayloadFactory.buildPairingJson(endpoint, spki)
             // 생성 직후 기존 QR 파서로 검증해, 앱이 저장할 수 없는 JSON을 화면에 보여주지 않습니다.
             PiPairingCodec.parse(json)
             debugState.update { current -> current.copy(generatedPairingJson = json) }
@@ -253,9 +256,12 @@ class PiDebugRepositoryImpl @Inject constructor(
 
     private suspend fun connectForSelectedMode() = when (debugState.value.connectionMode) {
         PiDebugConnectionMode.DirectEndpoint -> {
+            val endpoint = debugState.value.endpoint
             val spki = debugState.value.serverSpkiSha256
-                ?: throw IllegalStateException("직접 endpoint 모드는 먼저 SPKI 읽기가 필요합니다.")
-            piDebugClient.connectDirect(debugState.value.endpoint, spki)
+            if (spki == null) {
+                throw IllegalStateException("직접 endpoint 모드는 먼저 SPKI 읽기가 필요합니다.")
+            }
+            piDebugClient.connectDirect(endpoint, spki)
         }
 
         PiDebugConnectionMode.RegisteredPiNsd -> {

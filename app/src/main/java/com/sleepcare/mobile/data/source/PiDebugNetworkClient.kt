@@ -16,7 +16,6 @@ import com.sleepcare.mobile.domain.WatchHeartRateSample
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.security.SecureRandom
-import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -27,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -82,17 +82,33 @@ class PiDebugNetworkClient @Inject constructor(
 
     override suspend fun readServerSpki(endpoint: PiDebugEndpoint): String = withContext(Dispatchers.IO) {
         val parsed = endpoint.toParsedEndpoint()
-        val trustManager = TrustAllServerTrustManager()
-        val sslContext = SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf(trustManager), SecureRandom())
+
+        // SPKI 추출을 위해 일시적으로 모든 인증서를 허용하는 TrustManager를 사용합니다.
+        // 추출된 SPKI는 이후 pairing 과정에서 사용자 확인 또는 저장된 신뢰값과 비교됩니다.
+        val trustAllCerts = object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
         }
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, arrayOf<TrustManager>(trustAllCerts), SecureRandom())
+
         val okHttpClient = OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustManager)
+            .sslSocketFactory(sslContext.socketFactory, trustAllCerts)
             .hostnameVerifier { _, _ -> true }
+            .dns(object : okhttp3.Dns {
+                override fun lookup(hostname: String): List<java.net.InetAddress> {
+                    return if (hostname == "sleepcare-pi.local") {
+                        java.net.InetAddress.getAllByName(parsed.host).toList()
+                    } else {
+                        okhttp3.Dns.SYSTEM.lookup(hostname)
+                    }
+                }
+            })
             .build()
         val waiter = CompletableDeferred<String>()
 
-        val request = Request.Builder().url(parsed.url).build()
+        val request = Request.Builder().url("wss://sleepcare-pi.local:${parsed.port}${parsed.wsPath}").build()
         val socket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 // 이 단계는 등록이 아니라 인증서 pin을 읽는 진단입니다.
@@ -144,7 +160,8 @@ class PiDebugNetworkClient @Inject constructor(
                 override fun onDiscoveryStarted(serviceType: String) = Unit
 
                 override fun onServiceFound(serviceInfo: NsdServiceInfo) {
-                    if (serviceInfo.serviceType != PiPairingCodec.SERVICE_TYPE) return
+                    // Android NSD는 서비스 타입 앞뒤에 점이 붙어 있을 수 있어 contains로 확인하는 것이 안전합니다.
+                    if (!serviceInfo.serviceType.contains(PiPairingCodec.SERVICE_TYPE)) return
                     nsdManager.resolveService(serviceInfo, object : NsdManager.ResolveListener {
                         override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
                             candidates += serviceInfo.toDebugCandidate(error = "resolve failed: $errorCode")
@@ -190,10 +207,13 @@ class PiDebugNetworkClient @Inject constructor(
 
     override suspend fun connectRegistered(trustedPi: TrustedPiDevice): PiHelloAck = withContext(Dispatchers.IO) {
         val candidate = discoverNsdCandidates().firstOrNull { candidate ->
+            val matchesId = candidate.attributes["device_id"] == trustedPi.deviceId ||
+                candidate.serviceName.contains(trustedPi.deviceId)
+
             candidate.error == null &&
                 candidate.attributes["proto"] == "v1" &&
                 candidate.attributes["tls"] == "1" &&
-                candidate.attributes["device_id"] == trustedPi.deviceId &&
+                matchesId &&
                 (candidate.attributes["ws"] ?: trustedPi.wsPath) == trustedPi.wsPath &&
                 candidate.host != null &&
                 candidate.port != null
@@ -290,16 +310,38 @@ class PiDebugNetworkClient @Inject constructor(
     ): PiHelloAck {
         disconnectInternal()
 
-        val trustManager = ExpectedSpkiTrustManager(expectedSpkiSha256)
-        val sslContext = SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf(trustManager), SecureRandom())
+        // 지정된 SPKI와 일치하는지 검증하는 TrustManager를 설정합니다.
+        // 이를 통해 self-signed 인증서를 사용하는 Pi와도 안전하게 핀 고정(Pinning) 연결이 가능합니다.
+        val pinningTrustManager = object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+                val cert = chain?.firstOrNull() ?: throw IOException("서버 인증서가 없습니다.")
+                val actualSpki = PiPairingCodec.certificateSpkiSha256(cert)
+                if (actualSpki != expectedSpkiSha256) {
+                    throw IOException("인증서 SPKI가 일치하지 않습니다.\n기대: $expectedSpkiSha256\n실제: $actualSpki")
+                }
+            }
+
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
         }
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, arrayOf<TrustManager>(pinningTrustManager), SecureRandom())
+
         val okHttpClient = OkHttpClient.Builder()
             .pingInterval(20, TimeUnit.SECONDS)
-            .sslSocketFactory(sslContext.socketFactory, trustManager)
+            .sslSocketFactory(sslContext.socketFactory, pinningTrustManager)
             .hostnameVerifier { _, _ -> true }
+            .dns(object : okhttp3.Dns {
+                override fun lookup(hostname: String): List<java.net.InetAddress> {
+                    return if (hostname == "sleepcare-pi.local") {
+                        java.net.InetAddress.getAllByName(endpoint.host).toList()
+                    } else {
+                        okhttp3.Dns.SYSTEM.lookup(hostname)
+                    }
+                }
+            })
             .build()
-        val request = Request.Builder().url(endpoint.url).build()
+        val request = Request.Builder().url("wss://sleepcare-pi.local:${endpoint.port}${endpoint.wsPath}").build()
         val waiter = CompletableDeferred<PiHelloAck>()
         helloWaiter = waiter
         client = okHttpClient
@@ -367,6 +409,19 @@ class PiDebugNetworkClient @Inject constructor(
                     sessionSummaries.tryEmit(summary)
                     closeWaiters.remove(summary.sessionId)?.complete(summary)
                 }
+            }
+
+            "ping" -> {
+                sendEnvelope(
+                    PiProtocolCodec.buildEnvelope(
+                        type = "pong",
+                        sequence = sequence.getAndIncrement(),
+                        source = "phone",
+                        sessionId = envelope.sessionId,
+                        ackRequired = false,
+                        body = JSONObject(),
+                    )
+                )
             }
 
             "pong", "ack" -> Unit
@@ -437,26 +492,4 @@ private fun LocalDateTime.toEpochMillis(): Long =
 
 private fun List<Int>.toJsonArray() = JSONArray().apply {
     forEach { put(it) }
-}
-
-private class TrustAllServerTrustManager : X509TrustManager {
-    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-    override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-}
-
-private class ExpectedSpkiTrustManager(
-    private val expectedSpkiSha256: String,
-) : X509TrustManager {
-    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-
-    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        val leaf = chain?.firstOrNull() ?: throw CertificateException("Server certificate is missing.")
-        val actual = PiPairingCodec.certificateSpkiSha256(leaf)
-        if (actual != expectedSpkiSha256) {
-            throw CertificateException("SPKI가 pairing JSON/등록 Pi와 다릅니다. 인증서를 바꿨다면 다시 등록해 주세요.")
-        }
-    }
-
-    override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
 }
