@@ -19,6 +19,9 @@ import com.sleepcare.mobile.domain.TrustedPiDevice
 import com.sleepcare.mobile.domain.WatchHeartRateSample
 import com.sleepcare.mobile.domain.WatchSleepDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -27,6 +30,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -341,18 +347,37 @@ class PiNetworkDataSourceImpl @Inject constructor(
         endpoint: PiServiceEndpoint,
         trustedPi: TrustedPiDevice,
     ): Boolean = withContext(Dispatchers.IO) {
-        // Network Security Configuration(res/xml/network_security_config.xml)이
-        // 인증서와 호스트 이름(sleepcare-pi.local)을 검증하므로 사용자 정의 TrustManager를 제거합니다.
-        // DNS를 우회하여 로컬에서 찾은 IP로 직접 연결합니다.
-        val okHttpClient = OkHttpClient.Builder()
-            .pingInterval(20, TimeUnit.SECONDS)
-            .dns { hostname ->
-                if (hostname == "sleepcare-pi.local") {
-                    listOf(java.net.InetAddress.getByName(endpoint.host))
-                } else {
-                    okhttp3.Dns.SYSTEM.lookup(hostname)
+        // 등록된 Pi의 SPKI pin을 검증하는 TrustManager를 설정합니다.
+        // 이를 통해 network_security_config.xml에 등록되지 않은 self-signed 인증서를 사용하는 Pi와도
+        // 등록 시 확인된 SPKI 기반으로 안전하게 연결할 수 있습니다.
+        val pinningTrustManager = object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+                val cert = chain?.firstOrNull() ?: throw IOException("서버 인증서가 없습니다.")
+                val actualSpki = PiPairingCodec.certificateSpkiSha256(cert)
+                if (actualSpki != trustedPi.spkiSha256) {
+                    throw IOException("인증서 SPKI가 일치하지 않습니다.\n기대: ${trustedPi.spkiSha256}\n실제: $actualSpki")
                 }
             }
+
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, arrayOf<TrustManager>(pinningTrustManager), SecureRandom())
+
+        val okHttpClient = OkHttpClient.Builder()
+            .pingInterval(20, TimeUnit.SECONDS)
+            .sslSocketFactory(sslContext.socketFactory, pinningTrustManager)
+            .hostnameVerifier { _, _ -> true }
+            .dns(object : okhttp3.Dns {
+                override fun lookup(hostname: String): List<java.net.InetAddress> {
+                    return if (hostname == "sleepcare-pi.local") {
+                        java.net.InetAddress.getAllByName(endpoint.host).toList()
+                    } else {
+                        okhttp3.Dns.SYSTEM.lookup(hostname)
+                    }
+                }
+            })
             .build()
         val request = Request.Builder()
             .url("wss://sleepcare-pi.local:${endpoint.port}${endpoint.wsPath}")

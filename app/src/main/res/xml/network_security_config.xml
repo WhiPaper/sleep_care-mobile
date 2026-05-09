@@ -3,6 +3,7 @@
     <domain-config>
         <domain includeSubdomains="true">sleepcare-pi.local</domain>
         <trust-anchors>
+            <!-- Trust SleepCare CA certificate for WSS connections -->
             <certificates src="@raw/pi_cert"/>
         </trust-anchors>
     </domain-config>

@@ -252,25 +252,6 @@ private fun PiDebugCard(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .toggleable(
-                        value = state.endpoint.bypassVerification,
-                        onValueChange = { onEndpointChanged(state.endpoint.copy(bypassVerification = it)) },
-                        role = Role.Checkbox
-                    )
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Switch(
-                    checked = state.endpoint.bypassVerification,
-                    onCheckedChange = null // toggleable handles it
-                )
-                Spacer(Modifier.width(12.dp))
-                Text("인증서 검증 우회 (Self-signed 허용)", style = MaterialTheme.typography.bodyMedium)
-            }
             OutlinedButton(
                 onClick = { onConnectionModeChanged(PiDebugConnectionMode.DirectEndpoint) },
                 modifier = Modifier.fillMaxWidth(),
