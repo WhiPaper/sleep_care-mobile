@@ -23,6 +23,7 @@ import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.net.ssl.SSLContext
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -83,17 +83,22 @@ class PiDebugNetworkClient @Inject constructor(
     override suspend fun readServerSpki(endpoint: PiDebugEndpoint): String = withContext(Dispatchers.IO) {
         val parsed = endpoint.toParsedEndpoint()
 
+        val capturedCert = AtomicReference<X509Certificate?>(null)
         // SPKI 추출을 위해 일시적으로 모든 인증서를 허용하는 TrustManager를 사용합니다.
         // 추출된 SPKI는 이후 pairing 과정에서 사용자 확인 또는 저장된 신뢰값과 비교됩니다.
         val trustAllCerts = object : X509TrustManager {
             override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+                capturedCert.set(chain?.firstOrNull())
+            }
             override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
         }
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(null, arrayOf<TrustManager>(trustAllCerts), SecureRandom())
 
         val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
             .sslSocketFactory(sslContext.socketFactory, trustAllCerts)
             .hostnameVerifier { _, _ -> true }
             .dns(object : okhttp3.Dns {
@@ -111,11 +116,11 @@ class PiDebugNetworkClient @Inject constructor(
         val request = Request.Builder().url("wss://sleepcare-pi.local:${parsed.port}${parsed.wsPath}").build()
         val socket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                // 이 단계는 등록이 아니라 인증서 pin을 읽는 진단입니다.
-                // 아직 신뢰하지 않는 인증서도 열어 보되, 결과는 pairing JSON 검증 경로를 거쳐야만 저장됩니다.
-                val certificate = runCatching {
+                // TrustManager에서 캡처한 인증서를 우선 사용합니다. (일부 OkHttp 버전에서 WebSocket 응답의 handshake가 비어있을 수 있음)
+                val certificate = capturedCert.get() ?: runCatching {
                     response.handshake?.peerCertificates?.firstOrNull() as? X509Certificate
                 }.getOrNull()
+
                 if (certificate == null) {
                     waiter.completeExceptionally(IOException("WSS handshake에서 서버 인증서를 읽지 못했습니다."))
                 } else {
@@ -130,8 +135,7 @@ class PiDebugNetworkClient @Inject constructor(
         })
 
         try {
-            withTimeoutOrNull(6_000) { waiter.await() }
-                ?: throw IOException("SPKI 읽기 시간이 초과되었습니다. WSS 포트, 경로, 방화벽을 확인해 주세요.")
+            waiter.await()
         } finally {
             socket.cancel()
             okHttpClient.dispatcher.executorService.shutdown()
@@ -249,7 +253,7 @@ class PiDebugNetworkClient @Inject constructor(
             openWaiters.remove(sessionId)
             return@withContext false
         }
-        val opened = withTimeoutOrNull(6_000) { waiter.await() } ?: false
+        val opened = waiter.await()
         openWaiters.remove(sessionId)
         opened
     }
@@ -295,7 +299,7 @@ class PiDebugNetworkClient @Inject constructor(
             closeWaiters.remove(sessionId)
             return@withContext null
         }
-        val summary = withTimeoutOrNull(8_000) { waiter.await() }
+        val summary = waiter.await()
         closeWaiters.remove(sessionId)
         summary
     }
@@ -328,6 +332,9 @@ class PiDebugNetworkClient @Inject constructor(
         sslContext.init(null, arrayOf<TrustManager>(pinningTrustManager), SecureRandom())
 
         val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
             .pingInterval(20, TimeUnit.SECONDS)
             .sslSocketFactory(sslContext.socketFactory, pinningTrustManager)
             .hostnameVerifier { _, _ -> true }
@@ -377,8 +384,7 @@ class PiDebugNetworkClient @Inject constructor(
             }
         })
 
-        return withTimeoutOrNull(6_000) { waiter.await() }
-            ?: throw IOException("hello_ack 대기 시간이 초과되었습니다. Pi 로그에서 hello 수신 여부를 확인해 주세요.")
+        return waiter.await()
     }
 
     private fun handleIncomingMessage(text: String) {

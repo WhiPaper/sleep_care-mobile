@@ -19,7 +19,7 @@ Pi에서 준비할 것:
 - Pi IP 주소를 알고 있어야 한다. 예: `192.168.0.45`
 - WSS 포트를 정해야 한다. 예: `8765`
 - WebSocket path를 정해야 한다. 예: `/ws`
-- TLS 인증서와 개인키가 있어야 한다.
+- TLS 인증서와 개인키가 있어야 한다. (표준 파일명: `pi_cert.pem`, `pi_key.pem`)
 - Pi 서버 로그에서 수신 JSON을 한 줄씩 볼 수 있어야 한다.
 
 용어를 먼저 정리한다.
@@ -53,7 +53,7 @@ LISTEN 0 128 0.0.0.0:8765 ...
 
 ```text
 [sleepcare-pi] WSS listening on 0.0.0.0:8765 path=/ws
-[sleepcare-pi] TLS cert=./sleepcare_pi_cert.pem key=./sleepcare_pi_key.pem
+[sleepcare-pi] TLS cert=./pi_cert.pem key=./pi_key.pem
 ```
 
 성공 기준:
@@ -69,8 +69,8 @@ LISTEN 0 128 0.0.0.0:8765 ...
 - 인증서와 개인키가 맞는지 확인한다.
 
 ```bash
-openssl x509 -noout -modulus -in sleepcare_pi_cert.pem | openssl md5
-openssl rsa  -noout -modulus -in sleepcare_pi_key.pem  | openssl md5
+openssl x509 -noout -modulus -in pi_cert.pem | openssl md5
+openssl rsa  -noout -modulus -in pi_key.pem  | openssl md5
 ```
 
 두 출력이 같아야 한다.
@@ -566,29 +566,17 @@ Pi에서 확인할 로그:
 - Pi에서 `avahi-daemon`이 실행 중인지 확인한다.
 - 일단 직접 endpoint 모드로 WSS/hello/session이 되는지 먼저 확인한다. Avahi는 나중에 붙여도 된다.
 
-### hello timeout
+### 응답 타임아웃 (15초)
 
 증상:
 
-- 앱이 `hello_ack 대기 시간이 초과`라고 표시한다.
+- 앱이 `대기 시간이 초과`라고 표시하거나 연결을 종료한다.
 
 볼 것:
 
-- Pi 로그에 `hello` 수신이 있는지 확인한다.
-- 수신이 없다면 endpoint, WSS path, SPKI/TLS를 본다.
-- 수신은 있는데 timeout이면 Pi가 `t=hello_ack`를 정확히 보내는지 확인한다.
-
-### session ack timeout
-
-증상:
-
-- 앱이 `session.ack 대기 시간이 초과`라고 표시한다.
-
-볼 것:
-
-- Pi 로그에 `session.open` 수신이 있는지 확인한다.
-- `session.ack`의 `sid`가 앱이 보낸 `sid`와 같은지 확인한다.
-- `t` 값은 `session.ack`이어야 한다.
+- Pi 로그에 요청 수신이 있는지 확인한다.
+- 수신은 있는데 타임아웃이면 Pi가 ACK 응답을 보내는 과정에서 이벤트 루프가 블로킹되었는지 확인한다.
+- `libwebsockets` 사용 시 `lws_write` 준비 여부를 체크한다.
 
 ### risk sid 불일치
 

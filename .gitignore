@@ -141,8 +141,8 @@ fabric.properties
 .android/
 .kotlin/
 .DS_Store
-sleepcare_pi_dev_cert.pem
-sleepcare_pi_dev_key.pem
+pi_cert.pem
+pi_key.pem
 
 # Android Studio의 실행 대상/기기 선택 상태는 개인 장비 serial을 포함할 수 있습니다.
 .idea/deploymentTargetSelector.xml

@@ -59,7 +59,7 @@ class PiPairingCodecTest {
 
     @Test
     fun `certificate spki sha256 uses public key encoded bytes`() {
-        val certificateFile = File("src/main/res/raw/sleepcare_pi_dev_cert.pem")
+        val certificateFile = File("src/main/res/raw/pi_cert.pem")
         val certificate = certificateFile.inputStream().use { input ->
             CertificateFactory.getInstance("X.509").generateCertificate(input) as X509Certificate
         }

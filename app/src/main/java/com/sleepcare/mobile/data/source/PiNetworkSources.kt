@@ -265,7 +265,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
             return@withContext false
         }
 
-        val opened = withTimeoutOrNull(6_000) { waiter.await() } ?: false
+        val opened = waiter.await()
         openWaiters.remove(sessionId)
         opened
     }
@@ -319,7 +319,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
             return@withContext null
         }
 
-        val summary = withTimeoutOrNull(8_000) { waiter.await() }
+        val summary = waiter.await()
         closeWaiters.remove(sessionId)
         summary
     }
@@ -366,6 +366,9 @@ class PiNetworkDataSourceImpl @Inject constructor(
         sslContext.init(null, arrayOf<TrustManager>(pinningTrustManager), SecureRandom())
 
         val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
             .pingInterval(20, TimeUnit.SECONDS)
             .sslSocketFactory(sslContext.socketFactory, pinningTrustManager)
             .hostnameVerifier { _, _ -> true }
@@ -443,7 +446,7 @@ class PiNetworkDataSourceImpl @Inject constructor(
             }
         })
 
-        val helloAck = withTimeoutOrNull(6_000) { waiter.await() } ?: false
+        val helloAck = waiter.await()
         if (!helloAck) {
             webSocket?.cancel()
         }

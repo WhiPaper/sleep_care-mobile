@@ -44,11 +44,11 @@ WSS 연결 시 SPKI pin 검증
 Pi 쪽에는 다음 구성요소가 필요하다.
 
 ```text
-sleepcare_pi_cert.pem
+pi_cert.pem
   WSS 서버가 Android 앱에 제시할 서버 인증서다.
   self-signed 인증서여도 된다. 앱은 일반 CA 신뢰가 아니라 QR로 등록한 SPKI pin을 기준으로 검증한다.
 
-sleepcare_pi_key.pem
+pi_key.pem
   인증서 public key에 대응되는 private key다.
   Pi 서버 밖으로 노출하면 안 된다.
 
@@ -67,8 +67,8 @@ Avahi/DNS-SD service
 인증서와 개인키가 한 쌍인지 먼저 확인한다.
 
 ```bash
-openssl x509 -noout -modulus -in sleepcare_pi_cert.pem | openssl md5
-openssl rsa  -noout -modulus -in sleepcare_pi_key.pem  | openssl md5
+openssl x509 -noout -modulus -in pi_cert.pem | openssl md5
+openssl rsa  -noout -modulus -in pi_key.pem  | openssl md5
 ```
 
 두 출력값이 같아야 한다. 다르면 WSS 서버는 해당 인증서의 소유자임을 TLS handshake에서 증명할 수 없다.
@@ -136,10 +136,10 @@ key pair까지 교체
 
 ## 5. OpenSSL로 SPKI fingerprint 만들기
 
-Pi 서버 인증서가 `sleepcare_pi_cert.pem`이라고 할 때 다음 명령으로 QR에 넣을 `spki_sha256`을 만들 수 있다.
+Pi 서버 인증서가 `pi_cert.pem`이라고 할 때 다음 명령으로 QR에 넣을 `spki_sha256`을 만들 수 있다.
 
 ```bash
-openssl x509 -in sleepcare_pi_cert.pem -pubkey -noout \
+openssl x509 -in pi_cert.pem -pubkey -noout \
   | openssl pkey -pubin -outform DER \
   | openssl dgst -sha256 -binary \
   | openssl base64
@@ -156,7 +156,7 @@ openssl x509 -in sleepcare_pi_cert.pem -pubkey -noout \
 짧은 표시용 힌트가 필요하면 앞뒤 일부만 잘라 `pin_hint`에 넣을 수 있다.
 
 ```bash
-PIN="$(openssl x509 -in sleepcare_pi_cert.pem -pubkey -noout \
+PIN="$(openssl x509 -in pi_cert.pem -pubkey -noout \
   | openssl pkey -pubin -outform DER \
   | openssl dgst -sha256 -binary \
   | openssl base64)"
@@ -193,7 +193,7 @@ from cryptography.hazmat.primitives import serialization
 
 # Pi 서버가 TLS/WSS에 실제로 연결할 인증서다.
 # QR fingerprint도 반드시 이 인증서에서 계산해야 앱의 pin 검증과 맞는다.
-CERT_FILE = Path("sleepcare_pi_cert.pem")
+CERT_FILE = Path("pi_cert.pem")
 
 # device_id와 ws는 Avahi TXT record에도 같은 값으로 광고해야 한다.
 # 앱은 QR 등록값과 NSD 발견값이 다르면 다른 Pi로 보고 연결하지 않는다.
@@ -293,8 +293,8 @@ Python `ssl` 설정 예시는 다음과 같다.
 import ssl
 from aiohttp import web
 
-CERT_FILE = "sleepcare_pi_cert.pem"
-KEY_FILE = "sleepcare_pi_key.pem"
+CERT_FILE = "pi_cert.pem"
+KEY_FILE = "pi_key.pem"
 
 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 # QR의 spki_sha256을 계산할 때 사용한 인증서와 같은 key pair를 반드시 연결한다.
@@ -374,20 +374,20 @@ Pi 연결 시점:
 인증서 내용을 본다.
 
 ```bash
-openssl x509 -in sleepcare_pi_cert.pem -subject -issuer -dates -noout
+openssl x509 -in pi_cert.pem -subject -issuer -dates -noout
 ```
 
 인증서와 개인키가 한 쌍인지 확인한다.
 
 ```bash
-openssl x509 -noout -modulus -in sleepcare_pi_cert.pem | openssl md5
-openssl rsa  -noout -modulus -in sleepcare_pi_key.pem  | openssl md5
+openssl x509 -noout -modulus -in pi_cert.pem | openssl md5
+openssl rsa  -noout -modulus -in pi_key.pem  | openssl md5
 ```
 
 QR에 넣은 SPKI pin을 다시 계산한다.
 
 ```bash
-openssl x509 -in sleepcare_pi_cert.pem -pubkey -noout \
+openssl x509 -in pi_cert.pem -pubkey -noout \
   | openssl pkey -pubin -outform DER \
   | openssl dgst -sha256 -binary \
   | openssl base64
@@ -446,7 +446,7 @@ pin_hint
 
 Pi 쪽 체크리스트:
 
-- [ ] WSS 서버가 사용할 `cert.pem`과 `key.pem`이 같은 key pair인지 확인한다.
+- [ ] WSS 서버가 사용할 `pi_cert.pem`과 `pi_key.pem`이 같은 key pair인지 확인한다.
 - [ ] 인증서 public key에서 `spki_sha256`을 계산한다.
 - [ ] `sleepcare-pair-v1` JSON payload를 생성한다.
 - [ ] QR에는 JSON 문자열 자체를 넣는다.

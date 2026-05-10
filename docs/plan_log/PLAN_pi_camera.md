@@ -1,7 +1,7 @@
 # QR 기반 Pi 신뢰 등록 및 SPKI Pinning 구현 계획
 
 ## Summary
-- 기존 앱 내장 `sleepcare_pi_dev_cert.pem` 신뢰 방식에서, **Pi가 QR로 배포한 SPKI SHA-256 fingerprint를 앱에 등록하고 TLS 연결 시 검증하는 방식**으로 전환한다.
+- 기존 앱 내장 `pi_cert.pem` 신뢰 방식에서, **Pi가 QR로 배포한 SPKI SHA-256 fingerprint를 앱에 등록하고 TLS 연결 시 검증하는 방식**으로 전환한다.
 - QR 등록 UX는 **카메라 스캔 포함**으로 구현한다.
 - Pi 개발팀이 바로 맞춰 구현할 수 있도록 `docs/pi-qr-pairing.md`를 새로 만들고, 기존 통신 설계 문서에는 링크와 보안 요약을 추가한다.
 
